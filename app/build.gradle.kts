@@ -57,7 +57,6 @@ dependencies {
     // Room Database
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.core.ktx)
     ksp(libs.androidx.room.compiler)
     
     // Vico Charts
