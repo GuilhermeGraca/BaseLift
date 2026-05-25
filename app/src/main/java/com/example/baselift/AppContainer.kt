@@ -3,6 +3,8 @@ package com.example.baselift
 import android.content.Context
 import com.example.baselift.Model.local.AppDatabase
 
+import com.example.baselift.Model.repository.UserRepository
+
 /**
  * AppContainer é responsável pela Injeção de Dependências/Objetos Internos (DI)
  * Evita o uso desnecessário de lib de DI como Hilt ou Dagger
@@ -16,7 +18,7 @@ interface AppContainer {
     // Expões a base de dados e os repositorios
     //para q possam ser injetados nas classes que a usam
     val database: AppDatabase
-    // val userRepository: UserRepository
+    val userRepository: UserRepository
 }
 
 /**
@@ -31,8 +33,7 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         AppDatabase.getInstance(context)
     }
 
-
-    // override val userRepository: UserRepository by lazy {
-    //     UserRepositoryImpl(database.userDao())
-    // }
+    override val userRepository: UserRepository by lazy {
+        UserRepository(database.userDao())
+    }
 }
