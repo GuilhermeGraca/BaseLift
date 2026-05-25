@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.baselift.Model.local.entity.UserEntity
+import com.example.baselift.Model.local.dao.UserDao
 
 
 /**
@@ -14,9 +16,7 @@ import androidx.room.RoomDatabase
  * e desperdício de recursos
  */
 @Database(
-    // @Database diz ao Room que esta classe É a base de dados da app
-
-    entities = [], //a lista de "tabelas" que a base de dados vai ter
+    entities = [UserEntity::class], //a lista de "tabelas" que a base de dados vai ter
                    //Cada entity é uma data class anotada com @Entity
 
     version = 1, //o número da versão do esquema da base de dados.
@@ -36,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     // declarações dos DAOs como fun abstract
     // Dao é a interface que define as queries à base de dados (SELECT, INSERT, etc.).
     // O Room implementa-os automaticamente
+    abstract fun userDao(): UserDao
 
 
     // companion object / static obj para implementar o singleton
