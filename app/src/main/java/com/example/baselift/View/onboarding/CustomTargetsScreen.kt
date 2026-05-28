@@ -1,0 +1,290 @@
+package com.example.baselift.View.onboarding
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.baselift.View.theme.*
+import com.example.baselift.ViewModel.onboarding.OnboardingViewModel
+import kotlin.math.roundToInt
+
+@Composable
+fun CustomTargetsScreen(
+    viewModel: OnboardingViewModel,
+    onSaveAndSync: () -> Unit,
+    onRevert: () -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Local state for the editable fields to avoid constant recomposition and allow text typing
+    var calories by remember { mutableStateOf(uiState.dailyCaloriesGoal.toString()) }
+    var protein by remember { mutableStateOf(uiState.proteinGoal.toString()) }
+    var carbs by remember { mutableStateOf(uiState.carbsGoal.toString()) }
+    var fat by remember { mutableStateOf(uiState.fatGoal.toString()) }
+    
+    var showAdvancedCalc by remember { mutableStateOf(false) }
+    var proteinMultiplier by remember { mutableFloatStateOf(1.8f) }
+
+    LaunchedEffect(proteinMultiplier, calories, showAdvancedCalc) {
+        if (!showAdvancedCalc) return@LaunchedEffect
+        
+        val weightKg = if (uiState.preferredWeightUnit == "LBS") uiState.weight * 0.453592f else uiState.weight
+        val totalCals = calories.toIntOrNull() ?: uiState.dailyCaloriesGoal
+        
+        // 1. Protein
+        val pGrams = (weightKg * proteinMultiplier).roundToInt()
+        val pKcal = pGrams * 4
+        
+        // 2. Fats (min hormonal based on gender)
+        val fatMultiplier = if (uiState.gender == "FEMALE") 1.0f else 0.8f
+        var fGrams = (weightKg * fatMultiplier).roundToInt()
+        var fKcal = fGrams * 9
+        
+        // Check bounds
+        if (pKcal + fKcal > totalCals) {
+            val remainingForFat = (totalCals - pKcal).coerceAtLeast(0)
+            fGrams = remainingForFat / 9
+            fKcal = fGrams * 9
+        }
+        
+        // 3. Carbs
+        val cKcal = (totalCals - pKcal - fKcal).coerceAtLeast(0)
+        val cGrams = cKcal / 4
+        
+        protein = pGrams.toString()
+        fat = fGrams.toString()
+        carbs = cGrams.toString()
+    }
+
+    // Helper to safely parse and increment/decrement
+    fun updateValue(current: String, delta: Int, setter: (String) -> Unit) {
+        val valInt = current.toIntOrNull() ?: 0
+        setter((valInt + delta).coerceAtLeast(0).toString())
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(PureBlack)
+            .padding(16.dp)
+            .systemBarsPadding()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Text("Custom Targets", style = Typography.headlineLarge.copy(color = CrystalWhite), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text("Manual macro override. Precision matters.", style = Typography.bodyLarge.copy(color = MediumGrey), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Calories Box
+        MacroAdjustBox("TOTAL CALORIES", "kcal", calories, { calories = it.filter { char -> char.isDigit() } }, { updateValue(calories, it, { calories = it }) }, NeonGreen)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Advanced Calculator
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(if (showAdvancedCalc) DarkSurface else Color.Transparent)
+                .border(1.dp, if (showAdvancedCalc) Color.Transparent else ElectricBlue.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .clickable { showAdvancedCalc = !showAdvancedCalc }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Calculate, contentDescription = "Calculator", tint = ElectricBlue, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Hypertrophy Calculator", color = ElectricBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
+            Icon(
+                imageVector = if (showAdvancedCalc) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = "Expand",
+                tint = ElectricBlue
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (showAdvancedCalc) {
+            Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(DarkSurface).padding(16.dp)) {
+                Text("PROTEIN TARGET: ${String.format("%.1f", proteinMultiplier)} g/kg", color = CrystalWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(4.dp))
+                val fatFactor = if (uiState.gender == "FEMALE") "1.0g" else "0.8g"
+                Text("Recommended range for muscle hypertrophy (1.6g - 2.2g).\nFats fixed to hormonal minimums ($fatFactor/kg). Carbs take the remaining energy.", color = MediumGrey, fontSize = 11.sp, lineHeight = 16.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text("1.6", color = MediumGrey, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Slider(
+                        value = proteinMultiplier,
+                        onValueChange = { proteinMultiplier = it },
+                        valueRange = 1.6f..2.2f,
+                        steps = 5,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = NeonGreen, 
+                            activeTrackColor = NeonGreen,
+                            inactiveTrackColor = DeepCharcoal,
+                            activeTickColor = DeepCharcoal, 
+                            inactiveTickColor = DeepCharcoal
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("2.2", color = MediumGrey, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Macros Boxes
+        MacroAdjustBox("PROTEIN", "g", protein, { protein = it.filter { char -> char.isDigit() } }, { updateValue(protein, it, { protein = it }) }, ElectricBlue)
+        Spacer(modifier = Modifier.height(8.dp))
+        MacroAdjustBox("CARBS", "g", carbs, { carbs = it.filter { char -> char.isDigit() } }, { updateValue(carbs, it, { carbs = it }) }, NeonGreen)
+        Spacer(modifier = Modifier.height(8.dp))
+        MacroAdjustBox("FATS", "g", fat, { fat = it.filter { char -> char.isDigit() } }, { updateValue(fat, it, { fat = it }) }, SoftCoral)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Info Card
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(DarkSurface)
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(Icons.Default.Info, contentDescription = "Info", tint = ElectricBlue)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                "Manual overrides will disable automatic weekly adjustments based on weigh-ins.",
+                color = CrystalWhite,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                viewModel.updateCustomTargets(
+                    calories = calories.toIntOrNull() ?: uiState.dailyCaloriesGoal,
+                    protein = protein.toIntOrNull() ?: uiState.proteinGoal,
+                    carbs = carbs.toIntOrNull() ?: uiState.carbsGoal,
+                    fat = fat.toIntOrNull() ?: uiState.fatGoal
+                )
+                viewModel.saveUserProfile()
+                onSaveAndSync()
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = NeonGreen, contentColor = PureBlack),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("SAVE & SYNC", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Default.Refresh, contentDescription = "Sync")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Revert to Auto-Calculated",
+            color = CrystalWhite,
+            fontSize = 14.sp,
+            modifier = Modifier.fillMaxWidth().clickable { onRevert() },
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun MacroAdjustBox(
+    label: String,
+    unit: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    onAdjust: (Int) -> Unit,
+    accentColor: Color
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, if (label == "TOTAL CALORIES") NeonGreen else Color.Transparent, RoundedCornerShape(12.dp))
+            .background(DarkSurface)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.align(if (label == "TOTAL CALORIES") Alignment.CenterHorizontally else Alignment.Start)) {
+            if (label != "TOTAL CALORIES") {
+                Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(accentColor))
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(label, color = CrystalWhite, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AdjustButton(text = "-", onClick = { onAdjust(if (label == "TOTAL CALORIES") -50 else -5) })
+            
+            Row(verticalAlignment = Alignment.Bottom) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.width(100.dp).background(PureBlack, RoundedCornerShape(8.dp)).padding(vertical = 4.dp),
+                    textStyle = Typography.displayLarge.copy(fontSize = 24.sp, textAlign = TextAlign.Center, lineHeight = 24.sp, color = CrystalWhite),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(unit, color = MediumGrey, fontSize = 14.sp, modifier = Modifier.padding(bottom = 2.dp))
+            }
+
+            AdjustButton(text = "+", onClick = { onAdjust(if (label == "TOTAL CALORIES") 50 else 5) })
+        }
+    }
+}
+
+@Composable
+fun AdjustButton(text: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, MediumGrey.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = CrystalWhite, fontSize = 24.sp, fontWeight = FontWeight.Light, modifier = Modifier.offset(y = (-2).dp))
+    }
+}
