@@ -12,3 +12,4 @@ val SoftCoral = Color(0xFFFF5E5E)
 
 val CrystalWhite = Color(0xFFFFFFFF)
 val MediumGrey = Color(0xFFA0A0A0)
+val SunYellow = Color(0xFFFFD700)
