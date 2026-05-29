@@ -23,5 +23,6 @@ data class UserEntity(
     val proteinGoal: Int = 0,
     val carbsGoal: Int = 0,
     val fatGoal: Int = 0,
-    val bmi: Float = 0f
+    val bmi: Float = 0f,
+    val targetWeight: Float? = null
 )
