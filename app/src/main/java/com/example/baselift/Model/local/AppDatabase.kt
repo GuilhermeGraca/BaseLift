@@ -6,6 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.baselift.Model.local.entity.UserEntity
 import com.example.baselift.Model.local.dao.UserDao
+import com.example.baselift.Model.local.entity.WeightLogEntity
+import com.example.baselift.Model.local.dao.WeightLogDao
+import com.example.baselift.Model.local.entity.PhotoLogEntity
+import com.example.baselift.Model.local.dao.PhotoLogDao
 
 
 /**
@@ -16,10 +20,10 @@ import com.example.baselift.Model.local.dao.UserDao
  * e desperdício de recursos
  */
 @Database(
-    entities = [UserEntity::class], //a lista de "tabelas" que a base de dados vai ter
+    entities = [UserEntity::class, WeightLogEntity::class, PhotoLogEntity::class], //a lista de "tabelas" que a base de dados vai ter
                    //Cada entity é uma data class anotada com @Entity
 
-    version = 1, //o número da versão do esquema da base de dados.
+    version = 3, //o número da versão do esquema da base de dados.
                  //Sempre que adicionarmos ou alterarmos uma tabela temos de
                  //incrementar este número para n dar erro
                  //serve para o Room saber que precisa de fazer uma "migração" dos dados antigos
@@ -37,6 +41,8 @@ abstract class AppDatabase : RoomDatabase() {
     // Dao é a interface que define as queries à base de dados (SELECT, INSERT, etc.).
     // O Room implementa-os automaticamente
     abstract fun userDao(): UserDao
+    abstract fun weightLogDao(): WeightLogDao
+    abstract fun photoLogDao(): PhotoLogDao
 
 
     // companion object / static obj para implementar o singleton
@@ -57,7 +63,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext, // applicationContext para evitar memory leaks
                     AppDatabase::class.java,    // classe da nossa base de dados
                     "baselift_database"         // nome do ficheiro .db no dispositivo
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

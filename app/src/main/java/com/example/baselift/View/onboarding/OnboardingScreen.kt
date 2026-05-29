@@ -44,6 +44,7 @@ fun OnboardingScreen(
     onNavigateToCustomTargets: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRecalibrating by viewModel.isRecalibrating.collectAsStateWithLifecycle()
     var currentStep by rememberSaveable { mutableIntStateOf(0) }
     val totalSteps = 4
 
@@ -96,6 +97,7 @@ fun OnboardingScreen(
                 )
                 3 -> StepCalculatedTargets(
                     uiState = uiState,
+                    isRecalibrating = isRecalibrating,
                     onGetStarted = {
                         viewModel.saveUserProfile()
                         onNavigateToDashboard()
@@ -369,6 +371,7 @@ fun StepWeightGoal(
 @Composable
 fun StepCalculatedTargets(
     uiState: UserEntity,
+    isRecalibrating: Boolean,
     onGetStarted: () -> Unit,
     onCustomTargets: () -> Unit
 ) {
@@ -421,7 +424,10 @@ fun StepCalculatedTargets(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        NeonButton(text = "GET STARTED", onClick = onGetStarted)
+        NeonButton(
+            text = if (isRecalibrating) "UPDATE BASELINE" else "GET STARTED",
+            onClick = onGetStarted
+        )
         
         Spacer(modifier = Modifier.height(16.dp))
         

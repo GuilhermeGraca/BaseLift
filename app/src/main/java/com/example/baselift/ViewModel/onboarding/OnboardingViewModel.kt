@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.baselift.Model.local.entity.UserEntity
 import com.example.baselift.Model.repository.UserRepository
+import com.example.baselift.Model.repository.ProgressRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,11 +13,44 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-class OnboardingViewModel(private val userRepository: UserRepository) : ViewModel() {
+class OnboardingViewModel(
+    private val userRepository: UserRepository,
+    private val progressRepository: ProgressRepository
+) : ViewModel() {
 
-    // Mantém o estado atual dos dados inseridos pelo user durante o onboarding
     private val _uiState = MutableStateFlow(UserEntity())
     val uiState: StateFlow<UserEntity> = _uiState.asStateFlow()
+
+    private val _isRecalibrating = MutableStateFlow(false)
+    val isRecalibrating: StateFlow<Boolean> = _isRecalibrating.asStateFlow()
+
+    private val _isLoaded = MutableStateFlow(false)
+    val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
+
+    private var oldWeight: Float? = null
+
+    init {
+        viewModelScope.launch {
+            userRepository.getUser().collect { user ->
+                if (user != null) {
+                    _uiState.value = user
+                    _isRecalibrating.value = true
+                    if (oldWeight == null) {
+                        oldWeight = user.weight
+                    }
+                }
+                _isLoaded.value = true
+            }
+        }
+    }
+
+    /**
+     * Prepara o ViewModel para uma nova recalibração, capturando o peso atual da base de dados como baseline.
+     */
+    fun startRecalibration() {
+        oldWeight = _uiState.value.weight
+        _isRecalibrating.value = true
+    }
 
     // Funções para atualizar cada campo à medida que o utilizador avança nos ecrãs
     fun updateGender(gender: String) { _uiState.update { it.copy(gender = gender) } }
@@ -113,29 +147,38 @@ class OnboardingViewModel(private val userRepository: UserRepository) : ViewMode
 
     /**
      * Grava o perfil do utilizador na base de dados (concluindo o Onboarding).
+     * Se o peso mudou (ou se for o primeiro onboarding), regista uma pesagem automática no histórico.
      */
     fun saveUserProfile() {
         viewModelScope.launch {
-            userRepository.saveUser(_uiState.value)
+            val newUser = _uiState.value
+            val isFirstTime = (oldWeight == null)
+            val weightChanged = !isFirstTime && (oldWeight != newUser.weight)
+
+            userRepository.saveUser(newUser)
+
+            if (isFirstTime || weightChanged) {
+                progressRepository.insertWeightLog(
+                    weight = newUser.weight,
+                    timestamp = System.currentTimeMillis()
+                )
+            }
+            oldWeight = newUser.weight
         }
     }
 }
 
 /**
- * Factory necessária para injetar o UserRepository no ViewModel quando fazemos DI Manual
+ * Factory necessária para injetar o UserRepository e o ProgressRepository no ViewModel quando fazemos DI Manual
  */
 class OnboardingViewModelFactory(
-    private val userRepository: UserRepository
-    //Passa se o userRepository à Factory
-    // - adicionar :ViewModelProvider.Factory diz que esta classe tem licença para criar ViewModels
+    private val userRepository: UserRepository,
+    private val progressRepository: ProgressRepository
 ) : ViewModelProvider.Factory {
-    //create é chamado quando o ecrã/jetpack compose pede o viewmodel
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        //verifica se o modelClass é do tipo OnboardingViewModel
         if (modelClass.isAssignableFrom(OnboardingViewModel::class.java)) {
-            //controi o objeto final e entrega o
-            @Suppress("UNCHECKED_CAST") //como se vai retornar as T - o @Suppress é para ignorar o warning
-            return OnboardingViewModel(userRepository) as T
+            @Suppress("UNCHECKED_CAST")
+            return OnboardingViewModel(userRepository, progressRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.baselift.Model.local.AppDatabase
 
 import com.example.baselift.Model.repository.UserRepository
+import com.example.baselift.Model.repository.ProgressRepository
 
 /**
  * AppContainer é responsável pela Injeção de Dependências/Objetos Internos (DI)
@@ -19,6 +20,7 @@ interface AppContainer {
     //para q possam ser injetados nas classes que a usam
     val database: AppDatabase
     val userRepository: UserRepository
+    val progressRepository: ProgressRepository
 }
 
 /**
@@ -35,5 +37,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val userRepository: UserRepository by lazy {
         UserRepository(database.userDao())
+    }
+
+    override val progressRepository: ProgressRepository by lazy {
+        ProgressRepository(database.weightLogDao(), database.photoLogDao())
     }
 }
