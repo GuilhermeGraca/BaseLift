@@ -1,24 +1,27 @@
 package com.example.baselift.View.navigation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -26,14 +29,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 import com.example.baselift.AppContainer
 import com.example.baselift.View.dashboard.DashboardScreen
 import com.example.baselift.View.insights.InsightsScreen
 import com.example.baselift.View.onboarding.CustomTargetsScreen
 import com.example.baselift.View.onboarding.OnboardingScreen
-import com.example.baselift.View.theme.CrystalWhite
-import com.example.baselift.View.theme.NeonGreen
-import com.example.baselift.View.theme.PureBlack
+import com.example.baselift.View.theme.*
 import com.example.baselift.ViewModel.onboarding.OnboardingViewModel
 import com.example.baselift.ViewModel.onboarding.OnboardingViewModelFactory
 import com.example.baselift.ViewModel.progress.ProgressViewModel
@@ -79,19 +81,40 @@ fun AppNavigation(
 
     val isLoaded by onboardingViewModel.isLoaded.collectAsStateWithLifecycle()
     val isRecalibrating by onboardingViewModel.isRecalibrating.collectAsStateWithLifecycle()
+    val userState by progressViewModel.user.collectAsStateWithLifecycle()
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    // Redirect to onboarding when database is cleared (Reset)
+    LaunchedEffect(isLoaded, userState) {
+        if (isLoaded && userState == null && navController.currentDestination?.route != Routes.ONBOARDING) {
+            navController.navigate(Routes.ONBOARDING) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     if (!isLoaded) {
         PremiumSplashScreen()
     } else {
-        val startDestination = if (isRecalibrating) Routes.INSIGHTS else Routes.ONBOARDING
+        val startDestination = remember {
+            if (isRecalibrating) Routes.INSIGHTS else Routes.ONBOARDING
+        }
         Scaffold(
+            topBar = {
+                if (showBottomBar) {
+                    TopHeaderBar(
+                        profilePhotoUri = userState?.profilePhotoUri,
+                        onResetClick = { showResetDialog = true }
+                    )
+                }
+            },
             bottomBar = {
                 if (showBottomBar) {
                     BottomNavigationBar(
                         currentRoute = currentRoute,
                         onNavigate = { route ->
                             navController.navigate(route) {
-                                popUpTo(navController.graph.startDestinationId) {
+                                popUpTo(Routes.INSIGHTS) {
                                     saveState = true
                                 }
                                 launchSingleTop = true
@@ -102,6 +125,15 @@ fun AppNavigation(
                 }
             }
         ) { innerPadding ->
+            if (showResetDialog) {
+                ResetConfirmationDialog(
+                    onDismiss = { showResetDialog = false },
+                    onConfirm = {
+                        showResetDialog = false
+                        progressViewModel.deleteAllData()
+                    }
+                )
+            }
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -125,7 +157,7 @@ fun AppNavigation(
                     CustomTargetsScreen(
                         viewModel = onboardingViewModel,
                         onSaveAndSync = {
-                            navController.navigate(Routes.DASHBOARD) {
+                            navController.navigate(Routes.INSIGHTS) {
                                 popUpTo(Routes.ONBOARDING) { inclusive = true }
                             }
                         },
@@ -164,6 +196,161 @@ fun AppNavigation(
                             }
                         }
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TopHeaderBar(
+    profilePhotoUri: String?,
+    onResetClick: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth().background(PureBlack)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(56.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Profile Photo (Avatar)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(DeepCharcoal)
+                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!profilePhotoUri.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = profilePhotoUri,
+                        contentDescription = "Profile Photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "No Profile Photo",
+                        tint = MediumGrey,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // App Name Title
+            Text(
+                text = "BASELIFT",
+                color = CrystalWhite,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 2.sp,
+                textAlign = TextAlign.Center
+            )
+
+            // Settings Icon and DropdownMenu
+            Box {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
+                        tint = MediumGrey,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier
+                        .background(DeepCharcoal)
+                        .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Eliminar todos os dados",
+                                color = SoftCoral,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onResetClick()
+                        }
+                    )
+                }
+            }
+        }
+        Divider(color = Color.White.copy(alpha = 0.15f), thickness = 1.dp)
+    }
+}
+
+@Composable
+fun ResetConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(PureBlack)
+                .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        )
+                    )
+                    .padding(24.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "ELIMINAR TODOS OS DADOS",
+                        color = SoftCoral,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Tem a certeza que deseja eliminar todos os seus dados? Esta ação é completamente irreversível e irá apagar todo o seu histórico de pesos, fotografias e baseline do utilizador.",
+                        color = CrystalWhite,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("CANCELAR", color = MediumGrey, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = onConfirm,
+                            colors = ButtonDefaults.buttonColors(containerColor = SoftCoral),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("ELIMINAR", color = PureBlack, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }

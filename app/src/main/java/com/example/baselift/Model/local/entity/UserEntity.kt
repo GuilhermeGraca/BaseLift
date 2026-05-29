@@ -24,5 +24,8 @@ data class UserEntity(
     val carbsGoal: Int = 0,
     val fatGoal: Int = 0,
     val bmi: Float = 0f,
-    val targetWeight: Float? = null
+    val targetWeight: Float? = null,
+    val isCustomTargets: Boolean = false,
+    val name: String? = null,
+    val profilePhotoUri: String? = null
 )

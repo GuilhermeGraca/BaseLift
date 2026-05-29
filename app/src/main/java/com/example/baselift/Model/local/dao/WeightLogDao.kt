@@ -21,4 +21,7 @@ interface WeightLogDao {
 
     @Delete
     suspend fun deleteWeightLog(weightLog: WeightLogEntity)
+
+    @Query("DELETE FROM weight_logs")
+    suspend fun clearWeightLogsTable()
 }

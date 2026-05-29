@@ -23,7 +23,7 @@ import com.example.baselift.Model.local.dao.PhotoLogDao
     entities = [UserEntity::class, WeightLogEntity::class, PhotoLogEntity::class], //a lista de "tabelas" que a base de dados vai ter
                    //Cada entity é uma data class anotada com @Entity
 
-    version = 3, //o número da versão do esquema da base de dados.
+    version = 5, //o número da versão do esquema da base de dados.
                  //Sempre que adicionarmos ou alterarmos uma tabela temos de
                  //incrementar este número para n dar erro
                  //serve para o Room saber que precisa de fazer uma "migração" dos dados antigos

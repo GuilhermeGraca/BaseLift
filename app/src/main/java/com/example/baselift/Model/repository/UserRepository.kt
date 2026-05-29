@@ -21,4 +21,8 @@ class UserRepository(private val userDao: UserDao) {
     suspend fun saveUser(user: UserEntity) {
         userDao.insertOrUpdateUser(user)
     }
+
+    suspend fun clearUserData() {
+        userDao.clearUserTable()
+    }
 }

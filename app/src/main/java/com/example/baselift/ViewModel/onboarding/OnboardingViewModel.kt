@@ -38,6 +38,10 @@ class OnboardingViewModel(
                     if (oldWeight == null) {
                         oldWeight = user.weight
                     }
+                } else {
+                    _uiState.value = UserEntity()
+                    _isRecalibrating.value = false
+                    oldWeight = null
                 }
                 _isLoaded.value = true
             }
@@ -67,7 +71,8 @@ class OnboardingViewModel(
                 dailyCaloriesGoal = calories,
                 proteinGoal = protein,
                 carbsGoal = carbs,
-                fatGoal = fat
+                fatGoal = fat,
+                isCustomTargets = true
             )
         }
     }
@@ -77,72 +82,9 @@ class OnboardingViewModel(
      * e atualiza o estado com os novos valores.
      */
     fun calculateTargets() {
-        val user = _uiState.value
-        
-        // Converter para sistema métrico para os cálculos se necessário
-        val weightKg = if (user.preferredWeightUnit == "LBS") user.weight * 0.453592f else user.weight
-        val heightCm = if (user.preferredHeightUnit == "FT") user.height * 30.48f else user.height
-        val heightM = heightCm / 100f
-
-        // Calcular BMI: weight (kg) / height^2 (m)
-        val bmi = if (heightM > 0) weightKg / (heightM * heightM) else 0f
-
-        // Calcular BMR - equação Mifflin-St Jeor para homens e mulheres
-        val bmr = if (user.gender == "MALE") {
-            (10 * weightKg) + (6.25f * heightCm) - (5 * user.age) + 5
-        } else {
-            (10 * weightKg) + (6.25f * heightCm) - (5 * user.age) - 161
-        }
-
-        // Multiplicador de Atividade Física (TDEE)
-        val activityMultiplier = when (user.activityLevel) {
-            "Sedentary" -> 1.2f
-            "Light" -> 1.375f
-            "Moderate" -> 1.55f
-            "Active" -> 1.725f
-            "Very Active" -> 1.9f
-            "Extra Active" -> 2.1f
-            else -> 1.2f
-        }
-        val tdee = bmr * activityMultiplier
-
-        // Ajuste Calórico com base no Weight Goal
-        val calorieAdjustment = when (user.goal) {
-            "Extreme Loss" -> -1000f // 1kg / week
-            "Weight Loss" -> -500f   // 0.5kg / week
-            "Mild Weight Loss" -> -250f // 0.25kg / week
-            "Maintenance" -> 0f
-            "Mild Weight Gain" -> 250f
-            "Weight Gain" -> 500f
-            "Extreme Gain" -> 1000f
-            else -> 0f
-        }
-        
-        // Garantir que as calorias não descem para níveis perigosos
-        var targetCalories = (tdee + calorieAdjustment).roundToInt()
-        if (targetCalories < 1200) targetCalories = 1200 //em dietas por conta propria, menos de 1200 é perigoso
-
-        // Divisão de Macronutrientes
-        // Usamos uma divisão standard para performance fitness: 30% Proteína, 45% Hidratos, 25% Gordura
-        // Proteína e Hidratos têm 4 kcal por grama; Gordura tem 9 kcal por grama.
-        val proteinKcal = targetCalories * 0.30f
-        val carbsKcal = targetCalories * 0.45f
-        val fatKcal = targetCalories * 0.25f
-
-        val proteinGrams = (proteinKcal / 4f).roundToInt()
-        val carbsGrams = (carbsKcal / 4f).roundToInt()
-        val fatGrams = (fatKcal / 9f).roundToInt()
-
-        // Atualizar estado com os resultados
-        _uiState.update {
-            it.copy(
-                bmi = String.format("%.1f", bmi).replace(",", ".").toFloat(),
-                dailyCaloriesGoal = targetCalories,
-                proteinGoal = proteinGrams,
-                carbsGoal = carbsGrams,
-                fatGoal = fatGrams
-            )
-        }
+        val user = _uiState.value.copy(isCustomTargets = false)
+        val updatedUser = com.example.baselift.Utils.CalculatorUtils.calculateUserMetrics(user)
+        _uiState.value = updatedUser
     }
 
     /**

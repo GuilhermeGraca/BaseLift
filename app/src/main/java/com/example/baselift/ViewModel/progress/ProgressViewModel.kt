@@ -52,7 +52,9 @@ class ProgressViewModel(
             if (timestamp in todayStart..todayEnd) {
                 val user = userRepository.getUser().firstOrNull()
                 if (user != null) {
-                    userRepository.saveUser(user.copy(weight = weight))
+                    val userWithNewWeight = user.copy(weight = weight)
+                    val recalculatedUser = com.example.baselift.Utils.CalculatorUtils.calculateUserMetrics(userWithNewWeight)
+                    userRepository.saveUser(recalculatedUser)
                 }
             }
         }
@@ -107,6 +109,43 @@ class ProgressViewModel(
     fun deletePhotoLog(photoLog: PhotoLogEntity) {
         viewModelScope.launch {
             progressRepository.deletePhotoLog(photoLog)
+        }
+    }
+
+    fun updateProfileName(name: String?) {
+        viewModelScope.launch {
+            val currentUser = userRepository.getUser().firstOrNull()
+            if (currentUser != null) {
+                userRepository.saveUser(currentUser.copy(name = name))
+            }
+        }
+    }
+
+    fun updateProfilePhoto(context: Context, uri: Uri?) {
+        viewModelScope.launch {
+            val currentUser = userRepository.getUser().firstOrNull()
+            if (currentUser != null) {
+                if (uri != null) {
+                    try {
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    userRepository.saveUser(currentUser.copy(profilePhotoUri = uri.toString()))
+                } else {
+                    userRepository.saveUser(currentUser.copy(profilePhotoUri = null))
+                }
+            }
+        }
+    }
+
+    fun deleteAllData() {
+        viewModelScope.launch {
+            progressRepository.clearProgressData()
+            userRepository.clearUserData()
         }
     }
 }

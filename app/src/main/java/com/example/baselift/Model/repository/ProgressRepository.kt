@@ -28,4 +28,9 @@ class ProgressRepository(
     suspend fun deletePhotoLog(photoLog: PhotoLogEntity) {
         photoLogDao.deletePhotoLog(photoLog)
     }
+
+    suspend fun clearProgressData() {
+        weightLogDao.clearWeightLogsTable()
+        photoLogDao.clearPhotoLogsTable()
+    }
 }

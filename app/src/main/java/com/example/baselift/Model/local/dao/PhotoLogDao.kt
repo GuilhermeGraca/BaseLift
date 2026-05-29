@@ -18,4 +18,7 @@ interface PhotoLogDao {
 
     @Query("SELECT * FROM photo_logs ORDER BY timestamp DESC")
     fun getAllPhotoLogsDescending(): Flow<List<PhotoLogEntity>>
+
+    @Query("DELETE FROM photo_logs")
+    suspend fun clearPhotoLogsTable()
 }

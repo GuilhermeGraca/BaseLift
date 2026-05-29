@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.Height
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -98,6 +100,23 @@ fun InsightsScreen(
         }
     }
 
+    val profilePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            progressViewModel.updateProfilePhoto(context, uri)
+        }
+    }
+
+    var showNameDialog by remember { mutableStateOf(false) }
+    var nameInput by remember { mutableStateOf(user?.name ?: "") }
+
+    LaunchedEffect(user) {
+        user?.let { currentUser ->
+            nameInput = currentUser.name ?: ""
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -106,16 +125,90 @@ fun InsightsScreen(
             .padding(24.dp)
             .systemBarsPadding()
     ) {
-        // Top Logo
-        Text(
-            text = "BASELIFT",
-            color = NeonGreen,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp,
+        // Profile Header Section (mockup style)
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Profile Photo (Large, neon green border)
+            Box(
+                modifier = Modifier.size(105.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .border(2.dp, NeonGreen, CircleShape)
+                        .background(DeepCharcoal)
+                        .clickable {
+                            profilePhotoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!user?.profilePhotoUri.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = user?.profilePhotoUri,
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "No Profile Photo",
+                            tint = MediumGrey,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                }
+
+                // Camera Icon overlay (bottom right)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .align(Alignment.BottomEnd)
+                        .offset(x = (-4).dp, y = (-4).dp)
+                        .clip(CircleShape)
+                        .background(NeonGreen)
+                        .clickable {
+                            profilePhotoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "Change Photo",
+                        tint = PureBlack,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // User Name
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable { showNameDialog = true }
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = (user?.name ?: "SEM NOME").uppercase(),
+                    color = CrystalWhite,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Name",
+                    tint = MediumGrey,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
         
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -373,6 +466,75 @@ fun InsightsScreen(
                 clickedPhoto = null
             }
         )
+    }
+
+    if (showNameDialog) {
+        Dialog(onDismissRequest = { showNameDialog = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PureBlack)
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                            )
+                        )
+                        .padding(24.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "EDITAR NOME",
+                            color = NeonGreen,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = nameInput,
+                            onValueChange = { nameInput = it },
+                            label = { Text("Nome", color = MediumGrey) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = NeonGreen,
+                                unfocusedBorderColor = PureBlack,
+                                focusedContainerColor = PureBlack,
+                                unfocusedContainerColor = PureBlack,
+                                focusedTextColor = CrystalWhite,
+                                unfocusedTextColor = CrystalWhite
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showNameDialog = false }) {
+                                Text("CANCELAR", color = MediumGrey)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    progressViewModel.updateProfileName(nameInput.ifBlank { null })
+                                    showNameDialog = false
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("GRAVAR", color = PureBlack, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
