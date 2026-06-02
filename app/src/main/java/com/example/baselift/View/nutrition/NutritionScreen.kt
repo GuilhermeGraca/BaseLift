@@ -80,6 +80,15 @@ fun NutritionScreen(
             }
         )
 
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // tabela de logs de hoje
+        com.example.baselift.View.nutrition.components.TodaysLogsSection(
+            logs = uiState.todayLogs,
+            onDeleteLog = { log -> viewModel.deleteLog(log) },
+            onResetAll = { viewModel.resetTodayLogs() }
+        )
+
         // espaço extra para não ficar colado à barra de navegação
         Spacer(modifier = Modifier.height(100.dp))
     }

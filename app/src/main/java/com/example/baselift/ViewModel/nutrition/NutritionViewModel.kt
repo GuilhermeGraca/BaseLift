@@ -82,6 +82,20 @@ class NutritionViewModel(
             nutritionRepository.insertNutritionLog(log)
         }
     }
+
+    // apagar um registo
+    fun deleteLog(log: NutritionLogEntity) {
+        viewModelScope.launch {
+            nutritionRepository.deleteNutritionLog(log)
+        }
+    }
+
+    // apagar todos os registos de hoje
+    fun resetTodayLogs() {
+        viewModelScope.launch {
+            nutritionRepository.resetTodayLogs()
+        }
+    }
 }
 
 // fábrica para instanciar o modelo de vista

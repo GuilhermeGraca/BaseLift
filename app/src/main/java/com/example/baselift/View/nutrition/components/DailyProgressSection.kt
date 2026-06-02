@@ -72,8 +72,9 @@ fun DailyProgressSection(
                 )
 
                 // progresso da barra
+                val circleColor = if (remainingCalories <= 0) SoftCoral else NeonGreen
                 drawArc(
-                    color = NeonGreen,
+                    color = circleColor,
                     startAngle = -90f,
                     sweepAngle = 360f * progressPercent,
                     useCenter = false,
