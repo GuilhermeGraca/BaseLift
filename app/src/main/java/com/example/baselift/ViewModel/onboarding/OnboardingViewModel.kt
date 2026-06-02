@@ -82,6 +82,15 @@ class OnboardingViewModel(
      * e atualiza o estado com os novos valores.
      */
     fun calculateTargets() {
+        val user = _uiState.value
+        val updatedUser = com.example.baselift.Utils.CalculatorUtils.calculateUserMetrics(user)
+        _uiState.value = updatedUser
+    }
+
+    /**
+     * Força o recálculo dos valores dinâmicos ignorando os custom targets (usado pelo botão de refresh)
+     */
+    fun refreshTargets() {
         val user = _uiState.value.copy(isCustomTargets = false)
         val updatedUser = com.example.baselift.Utils.CalculatorUtils.calculateUserMetrics(user)
         _uiState.value = updatedUser

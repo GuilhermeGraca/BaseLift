@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.Male
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingFlat
 import androidx.compose.material.icons.filled.TrendingUp
@@ -102,7 +103,8 @@ fun OnboardingScreen(
                         viewModel.saveUserProfile()
                         onNavigateToDashboard()
                     },
-                    onCustomTargets = onNavigateToCustomTargets
+                    onCustomTargets = onNavigateToCustomTargets,
+                    onRefreshTargets = { viewModel.refreshTargets() }
                 )
             }
         }
@@ -373,11 +375,27 @@ fun StepCalculatedTargets(
     uiState: UserEntity,
     isRecalibrating: Boolean,
     onGetStarted: () -> Unit,
-    onCustomTargets: () -> Unit
+    onCustomTargets: () -> Unit,
+    onRefreshTargets: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            Text("Your Calculated Targets", style = Typography.headlineLarge.copy(color = CrystalWhite))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    if (uiState.isCustomTargets) "Your Custom Targets" else "Your Calculated Targets",
+                    style = Typography.headlineLarge.copy(color = CrystalWhite)
+                )
+                if (uiState.isCustomTargets) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh to Baseline",
+                        tint = NeonGreen,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable { onRefreshTargets() }
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text("Based on your selected profile.", style = Typography.bodyLarge.copy(color = MediumGrey))
             Spacer(modifier = Modifier.height(16.dp))

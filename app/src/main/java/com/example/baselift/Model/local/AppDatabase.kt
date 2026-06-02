@@ -17,6 +17,9 @@ import com.example.baselift.Model.local.entity.ExerciseEntity
 import com.example.baselift.Model.local.entity.WorkoutSessionEntity
 import com.example.baselift.Model.local.entity.SetLogEntity
 import com.example.baselift.Model.local.dao.WorkoutDao
+import com.example.baselift.Model.local.entity.NutritionLogEntity
+import com.example.baselift.Model.local.entity.MealTemplateEntity
+import com.example.baselift.Model.local.dao.NutritionDao
 
 
 /**
@@ -34,11 +37,13 @@ import com.example.baselift.Model.local.dao.WorkoutDao
         WorkoutEntity::class,
         ExerciseEntity::class,
         WorkoutSessionEntity::class,
-        SetLogEntity::class
+        SetLogEntity::class,
+        NutritionLogEntity::class,
+        MealTemplateEntity::class
     ], // lista de entidades que a base de dados vai ter
                    // cada entidade é uma data class anotada com @Entity
 
-    version = 8, // versão 8 com a adição de setCount a ExerciseEntity
+    version = 9, // versão 9 com a adição das entidades de nutrição
 
     exportSchema = false // false porque não precisamos exportar o esquema para JSON
                          // e assim evitamos configurar a pasta de destino
@@ -56,6 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weightLogDao(): WeightLogDao
     abstract fun photoLogDao(): PhotoLogDao
     abstract fun workoutDao(): WorkoutDao
+    abstract fun nutritionDao(): NutritionDao
 
 
     // companion object para implementar o singleton
@@ -65,6 +71,14 @@ abstract class AppDatabase : RoomDatabase() {
         private val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE exercises ADD COLUMN setCount INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        // migração 8 para 9 adiciona tabelas de nutrição
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS `nutrition_logs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `calories` INTEGER NOT NULL, `protein` INTEGER NOT NULL, `carbs` INTEGER NOT NULL, `fats` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS `meal_templates` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `iconName` TEXT NOT NULL, `calories` INTEGER NOT NULL, `protein` INTEGER NOT NULL, `carbs` INTEGER NOT NULL, `fats` INTEGER NOT NULL)")
             }
         }
 
@@ -78,7 +92,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "baselift_database"
                 )
-                .addMigrations(MIGRATION_7_8)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
                 .build()
                 INSTANCE = instance
                 instance

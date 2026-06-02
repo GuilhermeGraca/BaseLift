@@ -43,6 +43,9 @@ import com.example.baselift.ViewModel.progress.ProgressViewModelFactory
 import com.example.baselift.ViewModel.workout.WorkoutViewModel
 import com.example.baselift.ViewModel.workout.WorkoutViewModelFactory
 import com.example.baselift.View.workout.WorkoutScreen
+import com.example.baselift.ViewModel.nutrition.NutritionViewModel
+import com.example.baselift.ViewModel.nutrition.NutritionViewModelFactory
+import com.example.baselift.View.nutrition.NutritionScreen
 
 /**
  * Rotas da aplicação
@@ -84,6 +87,10 @@ fun AppNavigation(
 
     val workoutViewModel: WorkoutViewModel = viewModel(
         factory = WorkoutViewModelFactory(appContainer.workoutRepository)
+    )
+
+    val nutritionViewModel: NutritionViewModel = viewModel(
+        factory = NutritionViewModelFactory(appContainer.nutritionRepository, appContainer.userRepository)
     )
 
     val isLoaded by onboardingViewModel.isLoaded.collectAsStateWithLifecycle()
@@ -183,10 +190,12 @@ fun AppNavigation(
                 }
                 
                 composable(Routes.NUTRITION) {
-                    // Ecrã provisório
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "Nutrition Screen", color = CrystalWhite)
-                    }
+                    NutritionScreen(
+                        viewModel = nutritionViewModel,
+                        onNavigateToCustomTargets = {
+                            navController.navigate(Routes.CUSTOM_TARGETS)
+                        }
+                    )
                 }
                 
                 composable(Routes.INSIGHTS) {

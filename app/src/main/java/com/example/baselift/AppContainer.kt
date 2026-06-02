@@ -5,6 +5,7 @@ import com.example.baselift.Model.local.AppDatabase
 
 import com.example.baselift.Model.repository.UserRepository
 import com.example.baselift.Model.repository.ProgressRepository
+import com.example.baselift.Model.repository.NutritionRepository
 
 /**
  * Gere a injeção de dependências
@@ -22,6 +23,7 @@ interface AppContainer {
     val userRepository: UserRepository
     val progressRepository: ProgressRepository
     val workoutRepository: com.example.baselift.Model.repository.WorkoutRepository
+    val nutritionRepository: NutritionRepository
 }
 
 /**
@@ -47,5 +49,9 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val workoutRepository: com.example.baselift.Model.repository.WorkoutRepository by lazy {
         com.example.baselift.Model.repository.WorkoutRepository(database.workoutDao())
+    }
+
+    override val nutritionRepository: NutritionRepository by lazy {
+        NutritionRepository(database.nutritionDao())
     }
 }

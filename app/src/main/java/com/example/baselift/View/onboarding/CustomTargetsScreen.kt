@@ -159,11 +159,11 @@ fun CustomTargetsScreen(
         }
 
         // macronutrientes
-        MacroAdjustBox("PROTEIN", "g", protein, { protein = it.filter { char -> char.isDigit() } }, { updateValue(protein, it, { protein = it }) }, ElectricBlue)
+        MacroAdjustBox("PROTEIN", "g", protein, { protein = it.filter { char -> char.isDigit() } }, { updateValue(protein, it, { protein = it }) }, SunYellow)
         Spacer(modifier = Modifier.height(8.dp))
-        MacroAdjustBox("CARBS", "g", carbs, { carbs = it.filter { char -> char.isDigit() } }, { updateValue(carbs, it, { carbs = it }) }, NeonGreen)
+        MacroAdjustBox("CARBS", "g", carbs, { carbs = it.filter { char -> char.isDigit() } }, { updateValue(carbs, it, { carbs = it }) }, ElectricBlue)
         Spacer(modifier = Modifier.height(8.dp))
-        MacroAdjustBox("FATS", "g", fat, { fat = it.filter { char -> char.isDigit() } }, { updateValue(fat, it, { fat = it }) }, SoftCoral)
+        MacroAdjustBox("FATS", "g", fat, { fat = it.filter { char -> char.isDigit() } }, { updateValue(fat, it, { fat = it }) }, VibrantPurple)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -230,13 +230,14 @@ fun MacroAdjustBox(
     value: String,
     onValueChange: (String) -> Unit,
     onAdjust: (Int) -> Unit,
-    accentColor: Color
+    accentColor: Color,
+    showBorder: Boolean = label == "TOTAL CALORIES"
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, if (label == "TOTAL CALORIES") NeonGreen else Color.Transparent, RoundedCornerShape(12.dp))
+            .border(1.dp, if (showBorder) NeonGreen else Color.Transparent, RoundedCornerShape(12.dp))
             .background(DarkSurface)
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
