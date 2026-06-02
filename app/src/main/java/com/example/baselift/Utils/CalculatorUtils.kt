@@ -6,33 +6,33 @@ import kotlin.math.roundToInt
 object CalculatorUtils {
 
     /**
-     * Calcula o BMI e, se os targets não forem customizados (isCustomTargets == false),
-     * calcula as calorias diárias e os macronutrientes com base na equação de Mifflin-St Jeor.
-     * Retorna uma nova instância de UserEntity atualizada.
+     * calcula o BMI
+     * calcula calorias e macronutrientes se não houver targets customizados
+     * retorna a entidade atualizada
      */
     fun calculateUserMetrics(user: UserEntity): UserEntity {
-        // Converter para sistema métrico para os cálculos
+        // converter para sistema métrico
         val weightKg = if (user.preferredWeightUnit == "LBS") user.weight * 0.453592f else user.weight
         val heightCm = if (user.preferredHeightUnit == "FT") user.height * 30.48f else user.height
         val heightM = heightCm / 100f
 
-        // Calcular BMI: weight (kg) / height^2 (m)
+        // calcular BMI
         val bmi = if (heightM > 0) weightKg / (heightM * heightM) else 0f
         val formattedBmi = String.format(java.util.Locale.US, "%.1f", bmi).toFloat()
 
         if (user.isCustomTargets) {
-            // Se o utilizador tem custom targets, apenas atualizamos o BMI
+            // se o utilizador tem targets customizados apenas atualiza o BMI
             return user.copy(bmi = formattedBmi)
         }
 
-        // Calcular BMR - equação Mifflin-St Jeor
+        // calcular BMR
         val bmr = if (user.gender == "MALE") {
             (10 * weightKg) + (6.25f * heightCm) - (5 * user.age) + 5
         } else {
             (10 * weightKg) + (6.25f * heightCm) - (5 * user.age) - 161
         }
 
-        // Multiplicador de Atividade Física (TDEE)
+        // multiplicador de atividade física
         val activityMultiplier = when (user.activityLevel) {
             "Sedentary" -> 1.2f
             "Light" -> 1.375f
@@ -44,7 +44,7 @@ object CalculatorUtils {
         }
         val tdee = bmr * activityMultiplier
 
-        // Ajuste Calórico com base no Weight Goal
+        // ajuste calórico
         val calorieAdjustment = when (user.goal) {
             "Extreme Loss" -> -1000f // 1kg / week
             "Weight Loss" -> -500f   // 0.5kg / week
@@ -56,11 +56,11 @@ object CalculatorUtils {
             else -> 0f
         }
         
-        // Garantir que as calorias não descem para níveis perigosos
+        // garantir que as calorias não descem para níveis perigosos
         var targetCalories = (tdee + calorieAdjustment).roundToInt()
         if (targetCalories < 1200) targetCalories = 1200
 
-        // Divisão de Macronutrientes (30% Proteína, 45% Hidratos, 25% Gordura)
+        // divisão de macronutrientes
         val proteinKcal = targetCalories * 0.30f
         val carbsKcal = targetCalories * 0.45f
         val fatKcal = targetCalories * 0.25f

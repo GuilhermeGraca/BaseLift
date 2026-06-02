@@ -34,7 +34,7 @@ class ProgressViewModel(
     fun addWeightLog(weight: Float, timestamp: Long) {
         viewModelScope.launch {
             progressRepository.insertWeightLog(weight, timestamp)
-            // Update the user's current weight in UserEntity if timestamp is from today
+            // atualizar o peso atual na entidade de utilizador se a data for de hoje
             val todayStart = java.util.Calendar.getInstance().apply {
                 set(java.util.Calendar.HOUR_OF_DAY, 0)
                 set(java.util.Calendar.MINUTE, 0)
@@ -63,7 +63,7 @@ class ProgressViewModel(
     fun addPhotoLog(context: Context, uri: Uri) {
         viewModelScope.launch {
             try {
-                // Request persistable permission so we can read the URI after app restart
+                // pedir permissão persistente para ler a imagem depois do reinício
                 context.contentResolver.takePersistableUriPermission(
                     uri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION

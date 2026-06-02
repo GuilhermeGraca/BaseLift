@@ -26,7 +26,7 @@ enum class BottomNavItem(val title: String, val icon: ImageVector, val route: St
     Dashboard("Dashboard", Icons.Default.Dashboard, "dashboard"),
     Workout("Workout", Icons.Default.FitnessCenter, "workout"),
     Nutrition("Nutrition", Icons.Default.Restaurant, "nutrition"),
-    Insights("Insights", Icons.Default.Analytics, "insights") // Using Analytics icon for Insights
+    Insights("Insights", Icons.Default.Analytics, "insights") // ícone de análise para insights
 }
 
 @Composable

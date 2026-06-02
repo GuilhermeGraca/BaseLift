@@ -125,12 +125,12 @@ fun InsightsScreen(
             .padding(24.dp)
             .systemBarsPadding()
     ) {
-        // Profile Header Section (mockup style)
+        // cabeçalho de perfil
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Photo (Large, neon green border)
+            // fotografia de perfil
             Box(
                 modifier = Modifier.size(105.dp)
             ) {
@@ -162,7 +162,7 @@ fun InsightsScreen(
                     }
                 }
 
-                // Camera Icon overlay (bottom right)
+                // ícone da câmara
                 Box(
                     modifier = Modifier
                         .size(28.dp)
@@ -186,7 +186,7 @@ fun InsightsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // User Name
+            // nome do utilizador
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -212,7 +212,7 @@ fun InsightsScreen(
         
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Baseline Metrics Section
+        // métricas base
         Text("Baseline Metrics", color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -238,7 +238,7 @@ fun InsightsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Recalibrate Button
+        // botão de recalibrar
         Box(
             modifier = Modifier
                 .wrapContentWidth()
@@ -258,7 +258,7 @@ fun InsightsScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // BMI Section
+        // secção de IMC
         val bmiColor = getBmiColor(uiState.bmi)
         Column(
             modifier = Modifier
@@ -321,7 +321,7 @@ fun InsightsScreen(
 
         Spacer(modifier = Modifier.height(48.dp))
         
-        // Weight Trend
+        // tendência de peso
         WeightTrendSection(
             weightLogs = weightLogs, 
             targetWeight = user?.targetWeight,
@@ -330,19 +330,19 @@ fun InsightsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Log Weight
+        // registo de peso
         LogWeightSection { weight, timestamp ->
             progressViewModel.addWeightLog(weight, timestamp)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Technical History Ledger
+        // histórico
         TechnicalHistoryLedger(weightLogs, user, onDelete = { progressViewModel.deleteWeightLog(it) })
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        // Visual Diary
+        // diário visual
         VisualDiarySection(
             photoLogs = photoLogs,
             onPhotoClick = { clickedPhoto = it }
@@ -350,10 +350,10 @@ fun InsightsScreen(
             photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
 
-        Spacer(modifier = Modifier.height(100.dp)) // padding for bottom nav
+        Spacer(modifier = Modifier.height(100.dp)) // espaço para navegação inferior
     }
 
-    // Add Photo Dialog (Choose Date)
+    // diálogo para adicionar foto
     if (selectedUrisForLogging != null) {
         var photoTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
         val photoCalendar = Calendar.getInstance()
@@ -393,7 +393,7 @@ fun InsightsScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // Select Date Box
+                        // caixa de seleção de data
                         OutlinedTextField(
                             value = photoDateFormat.format(Date(photoTimestamp)),
                             onValueChange = { },
@@ -455,7 +455,7 @@ fun InsightsScreen(
         }
     }
 
-    // Photo Detail Dialog
+    // diálogo de detalhe da foto
     clickedPhoto?.let { photo ->
         PhotoDetailDialog(
             photoLog = photo,
@@ -570,7 +570,7 @@ fun WeightTrendSection(weightLogs: List<WeightLogEntity>, targetWeight: Float?, 
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    // Chart Box
+    // caixa do gráfico
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -604,7 +604,7 @@ fun WeightTrendSection(weightLogs: List<WeightLogEntity>, targetWeight: Float?, 
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    // Add Goal / Remove Goal Button
+    // botões de adicionar e remover objetivo
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         if (targetWeight != null) {
             Row(
@@ -738,7 +738,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
         .padding(top = 16.dp, bottom = 16.dp, end = 24.dp, start = 8.dp)
         .pointerInput(weightLogs) {
             detectTapGestures { tapOffset ->
-                // Calculate logic matching the drawing code to find the nearest point
+                // lógica para encontrar o ponto mais próximo
                 val width = size.width
                 val height = size.height
                 
@@ -769,7 +769,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
                     val x = leftPadding + (index * stepX)
                     val y = topPadding + (chartHeight - topPadding) - ((log.weightValue - yMin) / yRange) * (chartHeight - topPadding)
                     val dist = kotlin.math.sqrt((tapOffset.x - x)*(tapOffset.x - x) + (tapOffset.y - y)*(tapOffset.y - y))
-                    if (dist < 60f && dist < minDistance) { // 60f is the hit radius
+                    if (dist < 60f && dist < minDistance) { // 60f é o raio de toque
                         minDistance = dist
                         closestIndex = index
                         closestOffset = Offset(x, y)
@@ -790,21 +790,21 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
         
         val leftPadding = 80f
         val bottomPadding = 40f
-        val topPadding = 40f // Added top padding for dates
+        val topPadding = 40f // espaço superior para datas
         
         val chartWidth = width - leftPadding
         val chartHeight = height - bottomPadding
         
-        // draw axes
+        // desenhar eixos
         drawLine(color = MediumGrey, start = Offset(leftPadding, topPadding), end = Offset(leftPadding, chartHeight), strokeWidth = 2f)
         drawLine(color = MediumGrey, start = Offset(leftPadding, chartHeight), end = Offset(width, chartHeight), strokeWidth = 2f)
         
-        // calculate y range
+        // calcular intervalo y
         val yPadding = if (maxWeight == minWeight) 5f else (maxWeight - minWeight) * 0.2f
         var yMin = (minWeight - yPadding).coerceAtLeast(0f)
         var yMax = maxWeight + yPadding
         
-        // Ensure target is visible if present
+        // garantir que o objetivo está visível
         if (targetWeight != null) {
             if (targetWeight < yMin) yMin = (targetWeight - yPadding).coerceAtLeast(0f)
             if (targetWeight > yMax) yMax = targetWeight + yPadding
@@ -813,7 +813,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
         val yRange = yMax - yMin
         val drawHeight = chartHeight - topPadding
         
-        // Target weight line
+        // linha de objetivo
         if (targetWeight != null && targetWeight in yMin..yMax) {
             val yPos = topPadding + drawHeight - ((targetWeight - yMin) / yRange) * drawHeight
             drawLine(
@@ -826,7 +826,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
             drawContext.canvas.nativeCanvas.drawText("$targetWeight", leftPadding + 10f, yPos - 10f, targetPaint)
         }
         
-        // Data points
+        // pontos de dados
         val stepX = if (weightLogs.size > 1) chartWidth / (weightLogs.size - 1) else chartWidth / 2f
         
         val path = Path()
@@ -841,7 +841,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
             else path.lineTo(x, y)
         }
         
-        // Fill gradient
+        // gradiente de preenchimento
         if (points.isNotEmpty()) {
             val fillPath = Path().apply {
                 addPath(path)
@@ -859,27 +859,27 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
             )
         }
         
-        // Stroke
+        // contorno
         drawPath(
             path = path,
             color = NeonGreen,
             style = Stroke(width = 6f)
         )
         
-        // Dots
+        // pontos
         points.forEach { pt ->
             drawCircle(color = PureBlack, radius = 10f, center = pt)
             drawCircle(color = NeonGreen, radius = 10f, center = pt, style = Stroke(width = 4f))
         }
         
-        // Labels for min, mid, max y
+        // etiquetas para y
         drawContext.canvas.nativeCanvas.drawText(String.format(Locale.US, "%.1f", yMax), 0f, topPadding + 15f, textPaint)
         val yMid = (yMax + yMin) / 2
         val yMidPos = topPadding + drawHeight / 2
         drawContext.canvas.nativeCanvas.drawText(String.format(Locale.US, "%.1f", yMid), 0f, yMidPos + 10f, textPaint)
         drawContext.canvas.nativeCanvas.drawText(String.format(Locale.US, "%.1f", yMin), 0f, chartHeight, textPaint)
 
-        // Labels for dates (top)
+        // etiquetas para datas
         val dateFormat = SimpleDateFormat("MMM dd", Locale.US)
         if (weightLogs.isNotEmpty()) {
             val startText = dateFormat.format(Date(weightLogs.first().timestamp))
@@ -898,7 +898,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
             }
         }
 
-        // Draw Tooltip
+        // desenhar tooltip
         selectedIndex?.let { index ->
             val log = weightLogs[index]
             val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date(log.timestamp))
@@ -917,7 +917,7 @@ fun CustomWeightChart(weightLogs: List<WeightLogEntity>, targetWeight: Float?) {
             val tooltipHeight = textBounds.height() + 30f
             
             var tooltipX = selectedOffset.x
-            // prevent going off screen
+            // evitar sair do ecrã
             if (tooltipX - tooltipWidth/2 < 0) tooltipX = tooltipWidth/2
             if (tooltipX + tooltipWidth/2 > width) tooltipX = width - tooltipWidth/2
             
@@ -1224,10 +1224,10 @@ fun VisualDiarySection(
     onAddPhoto: () -> Unit
 ) {
     val dateFormat = SimpleDateFormat("MMM dd", Locale.US)
-    val sortedPhotos = remember(photoLogs) { photoLogs.sortedBy { it.timestamp } } // Oldest (left) to Newest (right)
+    val sortedPhotos = remember(photoLogs) { photoLogs.sortedBy { it.timestamp } } // mais antigas à esquerda e recentes à direita
     val lazyListState = rememberLazyListState()
 
-    // Automatically scroll to the end (latest photo) on load/update
+    // deslizar automaticamente para a última foto
     LaunchedEffect(sortedPhotos) {
         if (sortedPhotos.isNotEmpty()) {
             lazyListState.scrollToItem(sortedPhotos.size - 1)
@@ -1305,7 +1305,7 @@ fun VisualDiarySection(
                     }
                 }
 
-                // Left Fade Mask
+                // máscara de desvanecimento esquerda
                 if (leftFadeAlpha > 0f) {
                     Box(
                         modifier = Modifier
@@ -1320,7 +1320,7 @@ fun VisualDiarySection(
                     )
                 }
 
-                // Right Fade Mask
+                // máscara de desvanecimento direita
                 if (rightFadeAlpha > 0f) {
                     Box(
                         modifier = Modifier
@@ -1408,7 +1408,7 @@ fun PhotoDetailDialog(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Zoomable Image Box
+                    // imagem com zoom
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1447,7 +1447,7 @@ fun PhotoDetailDialog(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Date display
+                    // visualização da data
                     Text(
                         text = dateFormat.format(Date(photoLog.timestamp)).uppercase(Locale.US),
                         color = CrystalWhite,
@@ -1456,7 +1456,7 @@ fun PhotoDetailDialog(
                         textAlign = TextAlign.Center
                     )
                     
-                    // Cross-referenced Weight
+                    // peso cruzado
                     if (associatedWeight != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
@@ -1484,7 +1484,7 @@ fun PhotoDetailDialog(
                         }
                     }
                     
-                    // Delete Button Inline Confirmation Flow
+                    // fluxo de confirmação para eliminar
                     var showConfirmDelete by remember { mutableStateOf(false) }
                     
                     Spacer(modifier = Modifier.height(20.dp))
@@ -1539,7 +1539,7 @@ fun PhotoDetailDialog(
     }
 }
 
-// Keeping MetricCard, BmiBar, getBmiCategory, getBmiColor intact below
+// componentes visuais e de ajuda mantidos intactos
 @Composable
 fun MetricCard(
     label: String, 

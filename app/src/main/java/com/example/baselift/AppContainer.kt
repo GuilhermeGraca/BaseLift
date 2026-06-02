@@ -7,39 +7,45 @@ import com.example.baselift.Model.repository.UserRepository
 import com.example.baselift.Model.repository.ProgressRepository
 
 /**
- * AppContainer é responsável pela Injeção de Dependências/Objetos Internos (DI)
- * Evita o uso desnecessário de lib de DI como Hilt ou Dagger
- * este contentor central que sabe como instanciar as dependências da aplicação
+ * Gere a injeção de dependências
+ * Evita o uso de bibliotecas de injeção
+ * Contentor central que instancia as dependências da aplicação
  *
- *  -É inicializado uma única vez quando a app é iniciada numa classe :Application customizada
- *  -Mantém referências globais partilhadas, como a BD
- *  -Expõe os Repositories, passa-lhes os DAOs necessários da BD
+ *  - É inicializado uma vez ao iniciar a app
+ *  - Mantém referências globais como a base de dados
+ *  - Expõe os repositórios e os DAOs necessários
  */
 interface AppContainer {
-    // Expões a base de dados e os repositorios
-    //para q possam ser injetados nas classes que a usam
+    // Expõe a base de dados e os repositórios
+    // para que possam ser injetados nas classes
     val database: AppDatabase
     val userRepository: UserRepository
     val progressRepository: ProgressRepository
+    val workoutRepository: com.example.baselift.Model.repository.WorkoutRepository
 }
 
 /**
- * Implementação concreta do AppContainer
- * Recebe o Context (necessário para o Room) e instancia as dependências (lazy/quando necessário)
+ * Implementação do AppContainer
+ * Recebe o contexto e instancia as dependências
  */
 class DefaultAppContainer(private val context: Context) : AppContainer {
     
-    // 'lazy' garante que a BD só é criada ou recuperada
+    // lazy garante que a base de dados só é criada
     // na primeira vez que for necessária
     override val database: AppDatabase by lazy {
         AppDatabase.getInstance(context)
     }
 
+    // Repositórios
     override val userRepository: UserRepository by lazy {
         UserRepository(database.userDao())
     }
 
     override val progressRepository: ProgressRepository by lazy {
         ProgressRepository(database.weightLogDao(), database.photoLogDao())
+    }
+
+    override val workoutRepository: com.example.baselift.Model.repository.WorkoutRepository by lazy {
+        com.example.baselift.Model.repository.WorkoutRepository(database.workoutDao())
     }
 }

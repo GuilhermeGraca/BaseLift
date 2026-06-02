@@ -39,7 +39,7 @@ fun CustomTargetsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Local state for the editable fields to avoid constant recomposition and allow text typing
+    // estado local para edição dos campos
     var calories by remember { mutableStateOf(uiState.dailyCaloriesGoal.toString()) }
     var protein by remember { mutableStateOf(uiState.proteinGoal.toString()) }
     var carbs by remember { mutableStateOf(uiState.carbsGoal.toString()) }
@@ -54,23 +54,23 @@ fun CustomTargetsScreen(
         val weightKg = if (uiState.preferredWeightUnit == "LBS") uiState.weight * 0.453592f else uiState.weight
         val totalCals = calories.toIntOrNull() ?: uiState.dailyCaloriesGoal
         
-        // 1. Protein
+        // proteína
         val pGrams = (weightKg * proteinMultiplier).roundToInt()
         val pKcal = pGrams * 4
         
-        // 2. Fats (min hormonal based on gender)
+        // gordura com base no género
         val fatMultiplier = if (uiState.gender == "FEMALE") 1.0f else 0.8f
         var fGrams = (weightKg * fatMultiplier).roundToInt()
         var fKcal = fGrams * 9
         
-        // Check bounds
+        // verificar limites
         if (pKcal + fKcal > totalCals) {
             val remainingForFat = (totalCals - pKcal).coerceAtLeast(0)
             fGrams = remainingForFat / 9
             fKcal = fGrams * 9
         }
         
-        // 3. Carbs
+        // hidratos
         val cKcal = (totalCals - pKcal - fKcal).coerceAtLeast(0)
         val cGrams = cKcal / 4
         
@@ -79,7 +79,7 @@ fun CustomTargetsScreen(
         carbs = cGrams.toString()
     }
 
-    // Helper to safely parse and increment/decrement
+    // função para incrementar ou decrementar de forma segura
     fun updateValue(current: String, delta: Int, setter: (String) -> Unit) {
         val valInt = current.toIntOrNull() ?: 0
         setter((valInt + delta).coerceAtLeast(0).toString())
@@ -98,11 +98,11 @@ fun CustomTargetsScreen(
         Text("Manual macro override. Precision matters.", style = Typography.bodyLarge.copy(color = MediumGrey), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Calories Box
+        // calorias
         MacroAdjustBox("TOTAL CALORIES", "kcal", calories, { calories = it.filter { char -> char.isDigit() } }, { updateValue(calories, it, { calories = it }) }, NeonGreen)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Advanced Calculator
+        // calculadora avançada
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -158,7 +158,7 @@ fun CustomTargetsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Macros Boxes
+        // macronutrientes
         MacroAdjustBox("PROTEIN", "g", protein, { protein = it.filter { char -> char.isDigit() } }, { updateValue(protein, it, { protein = it }) }, ElectricBlue)
         Spacer(modifier = Modifier.height(8.dp))
         MacroAdjustBox("CARBS", "g", carbs, { carbs = it.filter { char -> char.isDigit() } }, { updateValue(carbs, it, { carbs = it }) }, NeonGreen)
@@ -167,7 +167,7 @@ fun CustomTargetsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Info Card
+        // informações
         Row(
             modifier = Modifier
                 .fillMaxWidth()

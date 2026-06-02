@@ -40,9 +40,12 @@ import com.example.baselift.ViewModel.onboarding.OnboardingViewModel
 import com.example.baselift.ViewModel.onboarding.OnboardingViewModelFactory
 import com.example.baselift.ViewModel.progress.ProgressViewModel
 import com.example.baselift.ViewModel.progress.ProgressViewModelFactory
+import com.example.baselift.ViewModel.workout.WorkoutViewModel
+import com.example.baselift.ViewModel.workout.WorkoutViewModelFactory
+import com.example.baselift.View.workout.WorkoutScreen
 
 /**
- * Rotas da aplicação (Screens)
+ * Rotas da aplicação
  */
 object Routes {
     const val ONBOARDING = "onboarding"
@@ -54,8 +57,8 @@ object Routes {
 }
 
 /**
- * AppNavigation é o componente central que gere toda a navegação da aplicação
- * define os ecrãs e as transições entre eles
+ * Componente que gere a navegação
+ * define os ecrãs e as transições
  */
 @Composable
 fun AppNavigation(
@@ -66,11 +69,11 @@ fun AppNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Tabs principais na Bottom Navigation Bar
+    // tabs principais na navegação inferior
     val mainTabs = listOf(Routes.DASHBOARD, Routes.WORKOUT, Routes.NUTRITION, Routes.INSIGHTS)
     val showBottomBar = currentRoute in mainTabs
 
-    // ViewModel partilhado para o fluxo de onboarding e insights
+    // viewModel partilhado para onboarding e insights
     val onboardingViewModel: OnboardingViewModel = viewModel(
         factory = OnboardingViewModelFactory(appContainer.userRepository, appContainer.progressRepository)
     )
@@ -79,12 +82,16 @@ fun AppNavigation(
         factory = ProgressViewModelFactory(appContainer.progressRepository, appContainer.userRepository)
     )
 
+    val workoutViewModel: WorkoutViewModel = viewModel(
+        factory = WorkoutViewModelFactory(appContainer.workoutRepository)
+    )
+
     val isLoaded by onboardingViewModel.isLoaded.collectAsStateWithLifecycle()
     val isRecalibrating by onboardingViewModel.isRecalibrating.collectAsStateWithLifecycle()
     val userState by progressViewModel.user.collectAsStateWithLifecycle()
     var showResetDialog by remember { mutableStateOf(false) }
 
-    // Redirect to onboarding when database is cleared (Reset)
+    // redirecionar para onboarding quando os dados são eliminados
     LaunchedEffect(isLoaded, userState) {
         if (isLoaded && userState == null && navController.currentDestination?.route != Routes.ONBOARDING) {
             navController.navigate(Routes.ONBOARDING) {
@@ -172,10 +179,7 @@ fun AppNavigation(
                 }
                 
                 composable(Routes.WORKOUT) {
-                    // Ecrã provisório
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "Workout Screen", color = CrystalWhite)
-                    }
+                    WorkoutScreen(viewModel = workoutViewModel)
                 }
                 
                 composable(Routes.NUTRITION) {

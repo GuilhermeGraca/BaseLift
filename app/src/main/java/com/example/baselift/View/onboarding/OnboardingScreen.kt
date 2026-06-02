@@ -55,7 +55,7 @@ fun OnboardingScreen(
             .padding(24.dp)
             .systemBarsPadding()
     ) {
-        // Header
+        // cabeçalho
         OnboardingHeader(
             currentStep = currentStep,
             totalSteps = totalSteps,
@@ -68,7 +68,7 @@ fun OnboardingScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Content
+        // conteúdo principal
         AnimatedContent(
             targetState = currentStep,
             transitionSpec = {
@@ -173,7 +173,7 @@ fun OnboardingHeader(
     }
 }
 
-// STEP 1: PROFILE
+// PASSO 1: PERFIL
 @Composable
 fun StepProfile(
     uiState: UserEntity,
@@ -198,7 +198,7 @@ fun StepProfile(
         
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Gender Selection
+        // seleção do género
         Text("GENDER", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
@@ -220,7 +220,7 @@ fun StepProfile(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Age Input
+        // idade
         Text("AGE", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         GlassTextField(
@@ -235,7 +235,7 @@ fun StepProfile(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Weight Input
+        // peso
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("CURRENT WEIGHT", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             UnitToggle(
@@ -258,7 +258,7 @@ fun StepProfile(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Height Input
+        // altura
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("HEIGHT", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             UnitToggle(
@@ -285,7 +285,7 @@ fun StepProfile(
     }
 }
 
-// STEP 2: ACTIVITY LEVEL
+// PASSO 2: NÍVEL DE ATIVIDADE
 @Composable
 fun StepActivityLevel(
     uiState: UserEntity,
@@ -324,7 +324,7 @@ fun StepActivityLevel(
     }
 }
 
-// STEP 3: WEIGHT GOAL
+// PASSO 3: OBJETIVO DE PESO
 @Composable
 fun StepWeightGoal(
     uiState: UserEntity,
@@ -367,7 +367,7 @@ fun StepWeightGoal(
     }
 }
 
-// STEP 4: CALCULATED TARGETS
+// PASSO 4: ALVOS CALCULADOS
 @Composable
 fun StepCalculatedTargets(
     uiState: UserEntity,
@@ -382,7 +382,7 @@ fun StepCalculatedTargets(
             Text("Based on your selected profile.", style = Typography.bodyLarge.copy(color = MediumGrey))
             Spacer(modifier = Modifier.height(16.dp))
 
-        // Calories Display
+        // mostrar calorias
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -405,7 +405,7 @@ fun StepCalculatedTargets(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Macros Display
+        // mostrar macronutrientes
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -441,7 +441,7 @@ fun StepCalculatedTargets(
     }
 }
 
-// REUSABLE COMPONENTS
+// COMPONENTES REUTILIZÁVEIS
 
 @Composable
 fun GenderButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
@@ -531,7 +531,7 @@ fun SelectionCard(title: String, description: String, isSelected: Boolean, onCli
             .padding(horizontal = 16.dp, vertical = verticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Radio indicator
+        // indicador de seleção
         Box(
             modifier = Modifier
                 .size(20.dp)
