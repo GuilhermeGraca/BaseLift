@@ -1,6 +1,7 @@
 package com.example.baselift.View.nutrition.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
@@ -47,7 +50,14 @@ fun QuickLogSection(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF131313), RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .background(PureBlack)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                    )
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
                 .padding(20.dp)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -88,15 +98,65 @@ fun QuickLogSection(
 
             // inputs
             if (isCaloriesOnly) {
-                MacroAdjustBox(
-                    label = "TOTAL CALORIES",
-                    unit = "kcal",
-                    value = kcalInput,
-                    onValueChange = { kcalInput = it.filter { char -> char.isDigit() } },
-                    onAdjust = { updateCalories(it) },
-                    accentColor = NeonGreen,
-                    showBorder = false
-                )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = "TOTAL CALORIES (kcal)", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp)),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(48.dp)
+                                .clickable { 
+                                    val current = kcalInput.toIntOrNull() ?: 0
+                                    kcalInput = maxOf(0, current - 100).toString() 
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("-", color = MediumGrey, fontSize = 24.sp, fontWeight = FontWeight.Medium)
+                        }
+                        
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (kcalInput.isEmpty()) {
+                                Text("0", color = MediumGrey, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
+                            BasicTextField(
+                                value = kcalInput,
+                                onValueChange = { kcalInput = it.filter { char -> char.isDigit() } },
+                                textStyle = androidx.compose.ui.text.TextStyle(
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                ),
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                cursorBrush = androidx.compose.ui.graphics.SolidColor(NeonGreen),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(48.dp)
+                                .clickable { 
+                                    val current = kcalInput.toIntOrNull() ?: 0
+                                    kcalInput = (current + 100).toString() 
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("+", color = MediumGrey, fontSize = 24.sp, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

@@ -2,6 +2,7 @@ package com.example.baselift.ViewModel.nutrition
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.baselift.Model.local.entity.MealTemplateEntity
 import com.example.baselift.Model.local.entity.NutritionLogEntity
 import com.example.baselift.Model.repository.NutritionRepository
 import com.example.baselift.Model.repository.UserRepository
@@ -25,6 +26,7 @@ data class NutritionUiState(
     val consumedFats: Int = 0,
 
     val todayLogs: List<NutritionLogEntity> = emptyList(),
+    val mealTemplates: List<MealTemplateEntity> = emptyList(),
     
     val isLoading: Boolean = true
 )
@@ -35,11 +37,11 @@ class NutritionViewModel(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
-    // combina os dados do utilizador (limites) com os registos de hoje (consumos)
     val uiState: StateFlow<NutritionUiState> = combine(
         userRepository.getUser(),
-        nutritionRepository.getTodayLogs()
-    ) { user, logs ->
+        nutritionRepository.getTodayLogs(),
+        nutritionRepository.getAllMealTemplates()
+    ) { user, logs, templates ->
         
         val consumedKcal = logs.sumOf { it.calories }
         val consumedP = logs.sumOf { it.protein }
@@ -56,6 +58,7 @@ class NutritionViewModel(
             consumedCarbs = consumedC,
             consumedFats = consumedF,
             todayLogs = logs,
+            mealTemplates = templates,
             isLoading = false
         )
     }.stateIn(
@@ -94,6 +97,35 @@ class NutritionViewModel(
     fun resetTodayLogs() {
         viewModelScope.launch {
             nutritionRepository.resetTodayLogs()
+        }
+    }
+
+    // adicionar ou atualizar um template
+    fun saveMealTemplate(template: com.example.baselift.Model.local.entity.MealTemplateEntity) {
+        viewModelScope.launch {
+            nutritionRepository.insertMealTemplate(template)
+        }
+    }
+
+    // apagar um template
+    fun deleteMealTemplate(template: com.example.baselift.Model.local.entity.MealTemplateEntity) {
+        viewModelScope.launch {
+            nutritionRepository.deleteMealTemplate(template)
+        }
+    }
+
+    // usar um template para registar (Quick Add Meal)
+    fun logMealTemplate(template: com.example.baselift.Model.local.entity.MealTemplateEntity) {
+        viewModelScope.launch {
+            val log = NutritionLogEntity(
+                name = template.name,
+                calories = template.calories,
+                protein = template.protein,
+                carbs = template.carbs,
+                fats = template.fats,
+                timestamp = System.currentTimeMillis()
+            )
+            nutritionRepository.insertNutritionLog(log)
         }
     }
 }

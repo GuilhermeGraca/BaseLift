@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,15 @@ fun NutritionScreen(
             CircularProgressIndicator(color = NeonGreen)
         }
         return
+    }
+
+    var showConfigureMealDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    if (showConfigureMealDialog) {
+        com.example.baselift.View.nutrition.components.ConfigureMealDialog(
+            onDismiss = { showConfigureMealDialog = false },
+            onSave = { template -> viewModel.saveMealTemplate(template) }
+        )
     }
 
     Column(
@@ -78,6 +88,16 @@ fun NutritionScreen(
             onAddEntry = { kcal, p, c, f, isCaloriesOnly ->
                 viewModel.addQuickLog(kcal, p, c, f, isCaloriesOnly)
             }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // quick add meals
+        com.example.baselift.View.nutrition.components.QuickAddMealsSection(
+            templates = uiState.mealTemplates,
+            onLogMeal = { template -> viewModel.logMealTemplate(template) },
+            onDeleteTemplate = { template -> viewModel.deleteMealTemplate(template) },
+            onConfigureClick = { showConfigureMealDialog = true }
         )
 
         Spacer(modifier = Modifier.height(32.dp))
