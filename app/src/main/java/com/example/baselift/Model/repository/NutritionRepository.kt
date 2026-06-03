@@ -49,6 +49,11 @@ class NutritionRepository(private val nutritionDao: NutritionDao) {
         return nutritionDao.getAllMealTemplates()
     }
 
+    // --- DASHBOARD ---
+
+    // todos os logs de nutrição (para streak e calendário)
+    fun getAllNutritionLogs() = nutritionDao.getAllNutritionLogs()
+
     // funções auxiliares para calcular limites do dia atual
     private fun getStartOfDayTimestamp(): Long {
         val calendar = Calendar.getInstance()

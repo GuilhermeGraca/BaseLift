@@ -46,6 +46,8 @@ import com.example.baselift.View.workout.WorkoutScreen
 import com.example.baselift.ViewModel.nutrition.NutritionViewModel
 import com.example.baselift.ViewModel.nutrition.NutritionViewModelFactory
 import com.example.baselift.View.nutrition.NutritionScreen
+import com.example.baselift.ViewModel.dashboard.DashboardViewModel
+import com.example.baselift.ViewModel.dashboard.DashboardViewModelFactory
 
 /**
  * Rotas da aplicação
@@ -91,6 +93,10 @@ fun AppNavigation(
 
     val nutritionViewModel: NutritionViewModel = viewModel(
         factory = NutritionViewModelFactory(appContainer.nutritionRepository, appContainer.userRepository)
+    )
+
+    val dashboardViewModel: DashboardViewModel = viewModel(
+        factory = DashboardViewModelFactory(appContainer.workoutRepository, appContainer.nutritionRepository)
     )
 
     val isLoaded by onboardingViewModel.isLoaded.collectAsStateWithLifecycle()
@@ -196,7 +202,8 @@ fun AppNavigation(
                 }
 
                 composable(Routes.DASHBOARD) {
-                    DashboardScreen()
+                    val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+                    DashboardScreen(uiState = dashboardUiState)
                 }
                 
                 composable(Routes.WORKOUT) {

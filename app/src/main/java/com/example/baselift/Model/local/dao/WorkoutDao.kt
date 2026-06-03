@@ -86,4 +86,36 @@ interface WorkoutDao {
         WHERE sl.exerciseId = :exerciseId AND ws.isCompleted = 1 AND sl.isCompleted = 1
     """)
     suspend fun getMax1RMForExercise(exerciseId: Int): Float?
+
+    // --- DASHBOARD ---
+
+    // todas as sessões completas (para streak e calendário semanal)
+    @Query("SELECT * FROM workout_sessions WHERE isCompleted = 1 ORDER BY timestamp DESC")
+    fun getAllCompletedSessions(): Flow<List<WorkoutSessionEntity>>
+
+    // todos os set logs completos (para agregação de volume total)
+    @Query("""
+        SELECT sl.* FROM set_logs sl
+        INNER JOIN workout_sessions ws ON sl.sessionId = ws.id
+        WHERE ws.isCompleted = 1 AND sl.isCompleted = 1
+        ORDER BY ws.timestamp ASC
+    """)
+    fun getAllCompletedSetLogs(): Flow<List<SetLogEntity>>
+
+    // set logs completos de um exercício específico (para gráficos por exercício)
+    @Query("""
+        SELECT sl.* FROM set_logs sl
+        INNER JOIN workout_sessions ws ON sl.sessionId = ws.id
+        WHERE sl.exerciseId = :exerciseId AND ws.isCompleted = 1 AND sl.isCompleted = 1
+        ORDER BY ws.timestamp ASC
+    """)
+    fun getCompletedSetLogsForExercise(exerciseId: Int): Flow<List<SetLogEntity>>
+
+    // sessões completas de um workout específico (para gráfico por rotina)
+    @Query("""
+        SELECT ws.* FROM workout_sessions ws
+        WHERE ws.workoutId = :workoutId AND ws.isCompleted = 1
+        ORDER BY ws.timestamp ASC
+    """)
+    fun getCompletedSessionsForWorkout(workoutId: Int): Flow<List<WorkoutSessionEntity>>
 }

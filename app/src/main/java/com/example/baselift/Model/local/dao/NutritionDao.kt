@@ -44,4 +44,10 @@ interface NutritionDao {
     // obter todos os templates configurados num fluxo contínuo
     @Query("SELECT * FROM meal_templates ORDER BY id ASC")
     fun getAllMealTemplates(): Flow<List<MealTemplateEntity>>
+
+    // --- DASHBOARD ---
+
+    // todos os logs de nutrição (para streak e calendário)
+    @Query("SELECT * FROM nutrition_logs ORDER BY timestamp ASC")
+    fun getAllNutritionLogs(): Flow<List<NutritionLogEntity>>
 }

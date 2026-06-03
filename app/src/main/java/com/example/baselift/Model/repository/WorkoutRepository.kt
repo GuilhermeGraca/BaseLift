@@ -122,12 +122,6 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
     }
 
     suspend fun logSet(sessionId: Int, exerciseId: Int, setNumber: Int, weight: Float, reps: Int, isCompleted: Boolean, existingSetId: Int = 0) {
-        // avaliar recorde apenas se a série estiver completa com valores maiores que 0
-        var prType = "NONE"
-        if (isCompleted && weight > 0 && reps > 0) {
-            prType = checkPR(exerciseId, weight, reps)
-        }
-
         val setLog = SetLogEntity(
             id = existingSetId,
             sessionId = sessionId,
@@ -136,13 +130,42 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
             weight = weight,
             reps = reps,
             isCompleted = isCompleted,
-            prType = prType
+            prType = "NONE"
         )
         
+        if (!isCompleted) {
+            if (existingSetId != 0) {
+                workoutDao.deleteSet(setLog)
+            }
+            return
+        }
+
+        // avaliar recorde apenas se a série estiver completa com valores maiores que 0
+        var prType = "NONE"
+        if (weight > 0 && reps > 0) {
+            prType = checkPR(exerciseId, weight, reps)
+        }
+
+        val finalSetLog = setLog.copy(prType = prType)
+        
         if (existingSetId == 0) {
-            workoutDao.insertSet(setLog)
+            workoutDao.insertSet(finalSetLog)
         } else {
-            workoutDao.updateSet(setLog)
+            workoutDao.updateSet(finalSetLog)
         }
     }
+
+    // --- DASHBOARD ---
+
+    // todas as sessões completas
+    fun getAllCompletedSessions() = workoutDao.getAllCompletedSessions()
+
+    // todos os set logs completos
+    fun getAllCompletedSetLogs() = workoutDao.getAllCompletedSetLogs()
+
+    // set logs completos de um exercício
+    fun getCompletedSetLogsForExercise(exerciseId: Int) = workoutDao.getCompletedSetLogsForExercise(exerciseId)
+
+    // sessões completas de um workout
+    fun getCompletedSessionsForWorkout(workoutId: Int) = workoutDao.getCompletedSessionsForWorkout(workoutId)
 }
