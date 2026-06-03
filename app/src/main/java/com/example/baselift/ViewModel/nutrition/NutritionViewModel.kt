@@ -137,6 +137,12 @@ class NutritionViewModel(
             nutritionRepository.insertNutritionLog(log)
         }
     }
+
+    fun deleteAllNutrition() {
+        viewModelScope.launch {
+            nutritionRepository.clearAllNutritionData()
+        }
+    }
 }
 
 // fábrica para instanciar o modelo de vista

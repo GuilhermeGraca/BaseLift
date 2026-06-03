@@ -72,4 +72,9 @@ class NutritionRepository(private val nutritionDao: NutritionDao) {
         calendar.set(Calendar.MILLISECOND, 999)
         return calendar.timeInMillis
     }
+
+    suspend fun clearAllNutritionData() {
+        nutritionDao.clearNutritionLogsTable()
+        nutritionDao.clearMealTemplatesTable()
+    }
 }

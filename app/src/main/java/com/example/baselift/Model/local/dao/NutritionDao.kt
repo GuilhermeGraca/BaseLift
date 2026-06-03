@@ -50,4 +50,10 @@ interface NutritionDao {
     // todos os logs de nutrição (para streak e calendário)
     @Query("SELECT * FROM nutrition_logs ORDER BY timestamp ASC")
     fun getAllNutritionLogs(): Flow<List<NutritionLogEntity>>
+
+    @Query("DELETE FROM nutrition_logs")
+    suspend fun clearNutritionLogsTable()
+
+    @Query("DELETE FROM meal_templates")
+    suspend fun clearMealTemplatesTable()
 }

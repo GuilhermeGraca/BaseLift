@@ -102,7 +102,7 @@ fun AppNavigation(
     val isLoaded by onboardingViewModel.isLoaded.collectAsStateWithLifecycle()
     val isRecalibrating by onboardingViewModel.isRecalibrating.collectAsStateWithLifecycle()
     val userState by progressViewModel.user.collectAsStateWithLifecycle()
-    var showResetDialog by remember { mutableStateOf(false) }
+    var resetType by remember { mutableStateOf<ResetType?>(null) }
 
     // redirecionar para onboarding quando os dados são eliminados
     LaunchedEffect(isLoaded, userState) {
@@ -124,7 +124,7 @@ fun AppNavigation(
                 if (showBottomBar) {
                     TopHeaderBar(
                         profilePhotoUri = userState?.profilePhotoUri,
-                        onResetClick = { showResetDialog = true },
+                        onResetClick = { type -> resetType = type },
                         onProfileClick = {
                             navController.navigate(Routes.INSIGHTS) {
                                 popUpTo(navController.graph.startDestinationId) {
@@ -154,12 +154,32 @@ fun AppNavigation(
                 }
             }
         ) { innerPadding ->
-            if (showResetDialog) {
+            if (resetType != null) {
+                val title = when (resetType) {
+                    ResetType.ALL -> "ELIMINAR TODOS OS DADOS"
+                    ResetType.WORKOUT -> "ELIMINAR DADOS DE WORKOUT"
+                    ResetType.NUTRITION -> "ELIMINAR DADOS DE NUTRIÇÃO"
+                    null -> ""
+                }
+                val message = when (resetType) {
+                    ResetType.ALL -> "Tem a certeza que deseja eliminar todos os seus dados? Esta ação é completamente irreversível e irá apagar todo o seu histórico de pesos, fotografias e baseline do utilizador."
+                    ResetType.WORKOUT -> "Tem a certeza que deseja eliminar todos os dados de treino? Esta ação irá apagar todos os seus exercícios, rotinas e histórico de treinos de forma irreversível."
+                    ResetType.NUTRITION -> "Tem a certeza que deseja eliminar todos os dados de nutrição? Esta ação irá apagar todos os seus registos diários e refeições de forma irreversível."
+                    null -> ""
+                }
+
                 ResetConfirmationDialog(
-                    onDismiss = { showResetDialog = false },
+                    title = title,
+                    message = message,
+                    onDismiss = { resetType = null },
                     onConfirm = {
-                        showResetDialog = false
-                        progressViewModel.deleteAllData()
+                        when (resetType) {
+                            ResetType.ALL -> progressViewModel.deleteAllData()
+                            ResetType.WORKOUT -> workoutViewModel.deleteAllWorkouts()
+                            ResetType.NUTRITION -> nutritionViewModel.deleteAllNutrition()
+                            else -> {}
+                        }
+                        resetType = null
                     }
                 )
             }
@@ -236,10 +256,12 @@ fun AppNavigation(
     }
 }
 
+enum class ResetType { ALL, WORKOUT, NUTRITION }
+
 @Composable
 fun TopHeaderBar(
     profilePhotoUri: String?,
-    onResetClick: () -> Unit,
+    onResetClick: (ResetType) -> Unit,
     onProfileClick: () -> Unit = {}
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -315,6 +337,33 @@ fun TopHeaderBar(
                     DropdownMenuItem(
                         text = {
                             Text(
+                                text = "Eliminar dados de workout",
+                                color = CrystalWhite,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onResetClick(ResetType.WORKOUT)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Eliminar dados de nutrição",
+                                color = CrystalWhite,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onResetClick(ResetType.NUTRITION)
+                        }
+                    )
+                    Divider(color = Color.White.copy(alpha = 0.15f), thickness = 1.dp)
+                    DropdownMenuItem(
+                        text = {
+                            Text(
                                 text = "Eliminar todos os dados",
                                 color = SoftCoral,
                                 fontWeight = FontWeight.Bold
@@ -322,7 +371,7 @@ fun TopHeaderBar(
                         },
                         onClick = {
                             menuExpanded = false
-                            onResetClick()
+                            onResetClick(ResetType.ALL)
                         }
                     )
                 }
@@ -334,6 +383,8 @@ fun TopHeaderBar(
 
 @Composable
 fun ResetConfirmationDialog(
+    title: String = "ELIMINAR TODOS OS DADOS",
+    message: String = "Tem a certeza que deseja eliminar todos os seus dados? Esta ação é completamente irreversível e irá apagar todo o seu histórico de pesos, fotografias e baseline do utilizador.",
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -357,7 +408,7 @@ fun ResetConfirmationDialog(
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = "ELIMINAR TODOS OS DADOS",
+                        text = title,
                         color = SoftCoral,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -365,7 +416,7 @@ fun ResetConfirmationDialog(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Tem a certeza que deseja eliminar todos os seus dados? Esta ação é completamente irreversível e irá apagar todo o seu histórico de pesos, fotografias e baseline do utilizador.",
+                        text = message,
                         color = CrystalWhite,
                         fontSize = 14.sp,
                         lineHeight = 20.sp

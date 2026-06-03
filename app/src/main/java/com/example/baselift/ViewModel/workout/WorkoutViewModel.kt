@@ -230,6 +230,12 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
             selectWorkout(_uiState.value.selectedWorkout)
         }
     }
+
+    fun deleteAllWorkouts() {
+        viewModelScope.launch {
+            repository.clearAllWorkoutData()
+        }
+    }
 }
 
 class WorkoutViewModelFactory(private val repository: WorkoutRepository) : ViewModelProvider.Factory {

@@ -148,6 +148,10 @@ class ProgressViewModel(
             userRepository.clearUserData()
         }
     }
+
+    // Nota: Estas funções delegam aos respetivos repositórios que já devem estar no construtor
+    // Como ProgressViewModel não tem WorkoutRepository/NutritionRepository, o mais fácil
+    // é delegar isto no DashboardViewModel ou passar uma flag na UI para quem tem acesso.
 }
 
 class ProgressViewModelFactory(

@@ -168,4 +168,11 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
 
     // sessões completas de um workout
     fun getCompletedSessionsForWorkout(workoutId: Int) = workoutDao.getCompletedSessionsForWorkout(workoutId)
+
+    suspend fun clearAllWorkoutData() {
+        workoutDao.clearSetLogsTable()
+        workoutDao.clearWorkoutSessionsTable()
+        workoutDao.clearExercisesTable()
+        workoutDao.clearWorkoutsTable()
+    }
 }

@@ -118,4 +118,16 @@ interface WorkoutDao {
         ORDER BY ws.timestamp ASC
     """)
     fun getCompletedSessionsForWorkout(workoutId: Int): Flow<List<WorkoutSessionEntity>>
+
+    @Query("DELETE FROM workouts")
+    suspend fun clearWorkoutsTable()
+
+    @Query("DELETE FROM exercises")
+    suspend fun clearExercisesTable()
+
+    @Query("DELETE FROM workout_sessions")
+    suspend fun clearWorkoutSessionsTable()
+
+    @Query("DELETE FROM set_logs")
+    suspend fun clearSetLogsTable()
 }
