@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 // estado da vista de nutrição
 data class NutritionUiState(
@@ -37,9 +39,12 @@ class NutritionViewModel(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
+    private val refreshTrigger = MutableStateFlow(System.currentTimeMillis())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<NutritionUiState> = combine(
         userRepository.getUser(),
-        nutritionRepository.getTodayLogs(),
+        refreshTrigger.flatMapLatest { nutritionRepository.getTodayLogs() },
         nutritionRepository.getAllMealTemplates()
     ) { user, logs, templates ->
         
@@ -66,6 +71,10 @@ class NutritionViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = NutritionUiState()
     )
+
+    fun refreshDate() {
+        refreshTrigger.value = System.currentTimeMillis()
+    }
 
     // adiciona um registo rápido
     fun addQuickLog(calories: Int, protein: Int = 0, carbs: Int = 0, fats: Int = 0, isCaloriesOnly: Boolean) {

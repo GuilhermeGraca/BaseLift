@@ -118,7 +118,16 @@ fun AppNavigation(
                 if (showBottomBar) {
                     TopHeaderBar(
                         profilePhotoUri = userState?.profilePhotoUri,
-                        onResetClick = { showResetDialog = true }
+                        onResetClick = { showResetDialog = true },
+                        onProfileClick = {
+                            navController.navigate(Routes.INSIGHTS) {
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
                     )
                 }
             },
@@ -171,8 +180,13 @@ fun AppNavigation(
                     CustomTargetsScreen(
                         viewModel = onboardingViewModel,
                         onSaveAndSync = {
-                            navController.navigate(Routes.INSIGHTS) {
-                                popUpTo(Routes.ONBOARDING) { inclusive = true }
+                            val previousRoute = navController.previousBackStackEntry?.destination?.route
+                            if (previousRoute == Routes.NUTRITION) {
+                                navController.popBackStack()
+                            } else {
+                                navController.navigate(Routes.INSIGHTS) {
+                                    popUpTo(Routes.ONBOARDING) { inclusive = true }
+                                }
                             }
                         },
                         onRevert = {
@@ -218,7 +232,8 @@ fun AppNavigation(
 @Composable
 fun TopHeaderBar(
     profilePhotoUri: String?,
-    onResetClick: () -> Unit
+    onResetClick: () -> Unit,
+    onProfileClick: () -> Unit = {}
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -238,7 +253,8 @@ fun TopHeaderBar(
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(DeepCharcoal)
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape),
+                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                    .clickable { onProfileClick() },
                 contentAlignment = Alignment.Center
             ) {
                 if (!profilePhotoUri.isNullOrEmpty()) {
