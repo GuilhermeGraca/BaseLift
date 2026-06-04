@@ -74,7 +74,7 @@ fun WorkoutScreen(
             // barra superior para abas de treino
             if (uiState.workouts.isNotEmpty()) {
                 androidx.compose.foundation.lazy.LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(uiState.workouts) { workout ->
@@ -114,7 +114,7 @@ fun WorkoutScreen(
                                             )
                                         }
                                 )
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = workout.name.uppercase(),
@@ -135,7 +135,7 @@ fun WorkoutScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // lista de exercícios
             if (uiState.selectedWorkout != null && isContentReady) {

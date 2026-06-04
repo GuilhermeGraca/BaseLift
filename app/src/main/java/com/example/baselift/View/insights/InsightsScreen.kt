@@ -122,8 +122,7 @@ fun InsightsScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PureBlack)
-            .systemBarsPadding(),
+            .background(PureBlack),
         contentPadding = PaddingValues(24.dp)
     ) {
         item {
