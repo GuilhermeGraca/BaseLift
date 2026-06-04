@@ -16,7 +16,10 @@ import kotlinx.coroutines.launch
 
 // ecrã principal do dashboard
 @Composable
-fun DashboardScreen(uiState: DashboardUiState) {
+fun DashboardScreen(
+    uiState: DashboardUiState,
+    onSetRestDays: (Int) -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -32,7 +35,8 @@ fun DashboardScreen(uiState: DashboardUiState) {
             workoutStreak = uiState.workoutStreak,
             nutritionDaysThisWeek = uiState.nutritionDaysThisWeek,
             workoutDaysThisWeek = uiState.workoutDaysThisWeek,
-            workoutSessionsThisWeek = uiState.workoutSessionsThisWeek
+            workoutSessionsThisWeek = uiState.workoutSessionsThisWeek,
+            onSetRestDays = onSetRestDays
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -40,7 +44,14 @@ fun DashboardScreen(uiState: DashboardUiState) {
         // secção de volume total de treino
         TotalTrainingVolumeSection(weeklyVolumes = uiState.weeklyVolumes)
 
-        // TODO: Routines (Step 6)
+        // secção de rotinas
+        com.example.baselift.View.dashboard.components.RoutinesSection(
+            workouts = uiState.workouts,
+            exercisesMap = uiState.exercises,
+            workoutVolumeTrends = uiState.workoutVolumeTrends,
+            exerciseVolumeTrends = uiState.exerciseVolumeTrends,
+            exerciseMaxWeightTrends = uiState.exerciseMaxWeightTrends
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
         val context = androidx.compose.ui.platform.LocalContext.current

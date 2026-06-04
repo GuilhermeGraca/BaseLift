@@ -38,59 +38,71 @@ fun BarChartWithControls(
     formatXLabel: (Long) -> String,
     summaryValue: String?,
     summarySubtitle: String?,
-    summarySubtitleColor: Color
+    summarySubtitleColor: Color = CrystalWhite,
+    showTimeFilters: Boolean = true,
+    chartHeight: androidx.compose.ui.unit.Dp = 250.dp
 ) {
     var selectedFilter by remember { mutableStateOf("ALL") }
     val filters = listOf("1M", "3M", "1Y", "ALL")
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(title, color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            filters.forEach { filter ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(if (selectedFilter == filter) barColor else DarkSurface)
-                        .clickable { selectedFilter = filter }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        filter,
-                        color = if (selectedFilter == filter) PureBlack else CrystalWhite,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (showTimeFilters) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(title, color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    filters.forEach { filter ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(if (selectedFilter == filter) barColor else DarkSurface)
+                                .clickable { selectedFilter = filter }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                filter,
+                                color = if (selectedFilter == filter) PureBlack else CrystalWhite,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+        } else if (title.isNotEmpty()) {
+            Text(title, color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
         }
-    }
 
-    Spacer(modifier = Modifier.height(16.dp))
+        // caixa do gráfico
+        var selectedIndex by remember { mutableStateOf<Int?>(null) }
+        var selectedOffset by remember { mutableStateOf(Offset.Zero) }
 
-    // caixa do gráfico
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
-    var selectedOffset by remember { mutableStateOf(Offset.Zero) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(DarkSurface)
-            .pointerInput(Unit) {
-                detectTapGestures { selectedIndex = null }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(chartHeight)
+                .clip(RoundedCornerShape(12.dp))
+                .background(DarkSurface)
+                .pointerInput(Unit) {
+                    detectTapGestures { selectedIndex = null }
+                }
+        ) {
+            val now = System.currentTimeMillis()
+            val filteredPoints = if (showTimeFilters) {
+                when (selectedFilter) {
+                    "1M" -> dataPoints.filter { now - it.xValue <= 30L * 24 * 60 * 60 * 1000 }
+                    "3M" -> dataPoints.filter { now - it.xValue <= 90L * 24 * 60 * 60 * 1000 }
+                    "1Y" -> dataPoints.filter { now - it.xValue <= 365L * 24 * 60 * 60 * 1000 }
+                    else -> dataPoints
+                }
+            } else {
+                dataPoints
             }
-    ) {
-        val now = System.currentTimeMillis()
-        val filteredPoints = when (selectedFilter) {
-            "1M" -> dataPoints.filter { now - it.xValue <= 30L * 24 * 60 * 60 * 1000 }
-            "3M" -> dataPoints.filter { now - it.xValue <= 90L * 24 * 60 * 60 * 1000 }
-            "1Y" -> dataPoints.filter { now - it.xValue <= 365L * 24 * 60 * 60 * 1000 }
-            else -> dataPoints
-        }
 
         // Resumo no topo (não sobreposto)
         if (summaryValue != null) {
@@ -142,7 +154,7 @@ fun BarChartWithControls(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(250.dp)
+                .weight(1f)
         ) {
             CustomCanvasBarChart(
                 validPoints = filteredPoints,
@@ -151,13 +163,14 @@ fun BarChartWithControls(
                 formatXLabel = formatXLabel,
                 selectedIndex = selectedIndex,
                 selectedOffset = selectedOffset,
-                onSelectionChange = { idx, off -> 
+                onSelectionChange = { idx: Int?, off: Offset -> 
                     selectedIndex = idx
                     selectedOffset = off
                 }
             )
         }
     }
+}
 }
 
 @Composable

@@ -45,7 +45,10 @@ fun InteractiveChartWithControls(
     targetLineColor: Color = ElectricBlue,
     yUnit: String = "KG",
     formatYLabel: (Float) -> String = { String.format(Locale.US, "%.1f", it) },
-    formatXLabel: (Long) -> String = { SimpleDateFormat("MMM dd", Locale.US).format(Date(it)) }
+    formatXLabel: (Long) -> String = { SimpleDateFormat("MMM dd", Locale.US).format(Date(it)) },
+    showTimeFilters: Boolean = true,
+    showTargetControls: Boolean = true,
+    chartHeight: androidx.compose.ui.unit.Dp = 250.dp
 ) {
     var selectedFilter by remember { mutableStateOf("ALL") }
     val filters = listOf("7D", "30D", "1Y", "ALL")
@@ -55,116 +58,128 @@ fun InteractiveChartWithControls(
     
     var isChronologicalScale by remember { mutableStateOf(false) }
 
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            filters.forEach { filter ->
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(if (selectedFilter == filter) lineColor else DarkSurface)
-                        .clickable { selectedFilter = filter }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        filter, 
-                        color = if (selectedFilter == filter) PureBlack else CrystalWhite, 
-                        fontSize = 10.sp, 
-                        fontWeight = FontWeight.Bold
-                    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (showTimeFilters) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(title, color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    filters.forEach { filter ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(if (selectedFilter == filter) lineColor else DarkSurface)
+                                .clickable { selectedFilter = filter }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                filter, 
+                                color = if (selectedFilter == filter) PureBlack else CrystalWhite, 
+                                fontSize = 10.sp, 
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        } else if (title.isNotEmpty()) {
+            Text(title, color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // caixa do gráfico
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(chartHeight)
+                .clip(RoundedCornerShape(12.dp))
+                .background(DarkSurface)
+        ) {
+            val now = System.currentTimeMillis()
+            val filteredPoints = if (showTimeFilters) {
+                when (selectedFilter) {
+                    "7D" -> dataPoints.filter { now - it.xValue <= 7L * 24 * 60 * 60 * 1000 }
+                    "30D" -> dataPoints.filter { now - it.xValue <= 30L * 24 * 60 * 60 * 1000 }
+                    "1Y" -> dataPoints.filter { now - it.xValue <= 365L * 24 * 60 * 60 * 1000 }
+                    else -> dataPoints
+                }
+            } else {
+                dataPoints
+            }
+            val validPoints = if (filteredPoints.isEmpty()) dataPoints.takeLast(1) else filteredPoints
+
+            CustomCanvasChart(
+                validPoints = validPoints,
+                targetValue = targetValue,
+                lineColor = lineColor,
+                targetLineColor = targetLineColor,
+                isChronologicalScale = isChronologicalScale,
+                formatYLabel = formatYLabel,
+                formatXLabel = formatXLabel
+            )
+            
+            if (validPoints.isNotEmpty()) {
+                val latestPoint = validPoints.last()
+                val previousPoint = if (validPoints.size > 1) validPoints[validPoints.size - 2] else latestPoint
+                val delta = latestPoint.yValue - previousPoint.yValue
+                val sign = if (delta > 0) "+" else ""
+                
+                Column(modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+                    Text("LATEST", color = CrystalWhite, fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
+                    Text("${sign}${formatYLabel(delta)} $yUnit", color = lineColor, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
-    }
 
-    Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-    // caixa do gráfico
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(DarkSurface)
-    ) {
-        val now = System.currentTimeMillis()
-        val filteredPoints = when (selectedFilter) {
-            "7D" -> dataPoints.filter { now - it.xValue <= 7L * 24 * 60 * 60 * 1000 }
-            "30D" -> dataPoints.filter { now - it.xValue <= 30L * 24 * 60 * 60 * 1000 }
-            "1Y" -> dataPoints.filter { now - it.xValue <= 365L * 24 * 60 * 60 * 1000 }
-            else -> dataPoints
-        }
-        val validPoints = if (filteredPoints.isEmpty()) dataPoints.takeLast(1) else filteredPoints
-
-        CustomCanvasChart(
-            validPoints = validPoints,
-            targetValue = targetValue,
-            lineColor = lineColor,
-            targetLineColor = targetLineColor,
-            isChronologicalScale = isChronologicalScale,
-            formatYLabel = formatYLabel,
-            formatXLabel = formatXLabel
-        )
-        
-        if (validPoints.isNotEmpty()) {
-            val latestPoint = validPoints.last()
-            val previousPoint = if (validPoints.size > 1) validPoints[validPoints.size - 2] else latestPoint
-            val delta = latestPoint.yValue - previousPoint.yValue
-            val sign = if (delta > 0) "+" else ""
-            
-            Column(modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-                Text("LATEST", color = CrystalWhite, fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
-                Text("${sign}${formatYLabel(delta)} $yUnit", color = lineColor, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
-            }
-        }
-    }
-
-    Spacer(modifier = Modifier.height(16.dp))
-
-    // botões de adicionar/remover objetivo e toggle de escala
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        // Toggle scale button
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(if (isChronologicalScale) lineColor else Color.Transparent)
-                .border(1.dp, lineColor, RoundedCornerShape(8.dp))
-                .clickable { isChronologicalScale = !isChronologicalScale }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.LinearScale, 
-                contentDescription = "Toggle Scale", 
-                tint = if (isChronologicalScale) PureBlack else lineColor, 
-                modifier = Modifier.size(16.dp)
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        if (targetValue != null) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, SoftCoral, RoundedCornerShape(8.dp))
-                    .clickable { onSetTargetValue(null) }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = "Remove Goal", tint = SoftCoral, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("REMOVE GOAL", color = SoftCoral, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-        } else {
+        // botões de adicionar/remover objetivo e toggle de escala
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            // Toggle scale button
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(ElectricBlue.copy(alpha = 0.2f))
-                    .clickable { showGoalDialog = true }
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (isChronologicalScale) lineColor else Color.Transparent)
+                    .border(1.dp, lineColor, RoundedCornerShape(6.dp))
+                    .clickable { isChronologicalScale = !isChronologicalScale }
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text("ADD GOAL +", color = ElectricBlue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Icon(
+                    Icons.Default.LinearScale, 
+                    contentDescription = "Toggle Scale", 
+                    tint = if (isChronologicalScale) PureBlack else lineColor, 
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+            
+            if (showTargetControls) {
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                if (targetValue != null) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .border(1.dp, SoftCoral, RoundedCornerShape(6.dp))
+                            .clickable { onSetTargetValue(null) }
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Remove Goal", tint = SoftCoral, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("REMOVE GOAL", color = SoftCoral, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(ElectricBlue.copy(alpha = 0.2f))
+                            .clickable { showGoalDialog = true }
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text("ADD GOAL +", color = ElectricBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }

@@ -222,8 +222,21 @@ fun AppNavigation(
                 }
 
                 composable(Routes.DASHBOARD) {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val sharedPrefs = context.getSharedPreferences("baselift_settings", android.content.Context.MODE_PRIVATE)
+                    
+                    LaunchedEffect(Unit) {
+                        dashboardViewModel.setRestDays(sharedPrefs.getInt("workout_rest_days", 4))
+                    }
+                    
                     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
-                    DashboardScreen(uiState = dashboardUiState)
+                    DashboardScreen(
+                        uiState = dashboardUiState,
+                        onSetRestDays = { days ->
+                            sharedPrefs.edit().putInt("workout_rest_days", days).apply()
+                            dashboardViewModel.setRestDays(days)
+                        }
+                    )
                 }
                 
                 composable(Routes.WORKOUT) {

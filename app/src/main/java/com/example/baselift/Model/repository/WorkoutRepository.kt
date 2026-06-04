@@ -22,6 +22,8 @@ class WorkoutRepository(private val workoutDao: WorkoutDao) {
     }
 
     // --- EXERCISES ---
+    val allExercises: Flow<List<ExerciseEntity>> = workoutDao.getAllExercises()
+
     fun getExercisesForWorkout(workoutId: Int): Flow<List<ExerciseEntity>> {
         return workoutDao.getExercisesForWorkout(workoutId)
     }

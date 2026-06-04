@@ -22,15 +22,26 @@ data class WeeklyVolume(
     val totalVolume: Float
 )
 
+data class NutritionSummary(
+    val calories: Int,
+    val protein: Int,
+    val carbs: Int,
+    val fats: Int
+)
+
 // estado da vista do dashboard
 data class DashboardUiState(
     val nutritionStreak: Int = 0,
     val workoutStreak: Int = 0,
-    val nutritionDaysThisWeek: Set<Int> = emptySet(),
-    val workoutDaysThisWeek: Set<Int> = emptySet(),
+    val nutritionDaysThisWeek: Map<Int, NutritionSummary> = emptyMap(),
+    val workoutDaysThisWeek: Map<Int, List<String>> = emptyMap(),
     val workoutSessionsThisWeek: Int = 0,
     val weeklyVolumes: List<WeeklyVolume> = emptyList(),
     val workouts: List<WorkoutEntity> = emptyList(),
+    val exercises: Map<Int, List<com.example.baselift.Model.local.entity.ExerciseEntity>> = emptyMap(),
+    val workoutVolumeTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
+    val exerciseVolumeTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
+    val exerciseMaxWeightTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
     val isLoading: Boolean = true
 )
 
@@ -40,24 +51,114 @@ class DashboardViewModel(
     private val nutritionRepository: NutritionRepository
 ) : ViewModel() {
 
+    private val restDaysFlow = MutableStateFlow(4) // default 4 rest days (so 3 workout days per week)
+
+    fun setRestDays(days: Int) {
+        restDaysFlow.value = days
+    }
+
     val uiState: StateFlow<DashboardUiState> = combine(
         nutritionRepository.getAllNutritionLogs(),
         workoutRepository.getAllCompletedSessions(),
         workoutRepository.getAllCompletedSetLogs(),
-        workoutRepository.allWorkouts
-    ) { nutritionLogs, completedSessions, completedSetLogs, workouts ->
+        workoutRepository.allWorkouts,
+        workoutRepository.allExercises,
+        restDaysFlow
+    ) { dataArray ->
+        @Suppress("UNCHECKED_CAST")
+        val nutritionLogs = dataArray[0] as List<NutritionLogEntity>
+        @Suppress("UNCHECKED_CAST")
+        val completedSessions = dataArray[1] as List<WorkoutSessionEntity>
+        @Suppress("UNCHECKED_CAST")
+        val completedSetLogs = dataArray[2] as List<com.example.baselift.Model.local.entity.SetLogEntity>
+        @Suppress("UNCHECKED_CAST")
+        val workouts = dataArray[3] as List<WorkoutEntity>
+        @Suppress("UNCHECKED_CAST")
+        val allExercises = dataArray[4] as List<com.example.baselift.Model.local.entity.ExerciseEntity>
+        val restDays = dataArray[5] as Int
 
         // calcular streak de nutrição
         val nutritionStreak = calculateNutritionStreak(nutritionLogs)
 
-        // calcular streak de workout (semanas consecutivas com >= 3 sessões)
-        val workoutStreak = calculateWorkoutStreak(completedSessions)
+        // calcular streak de workout (semanas consecutivas com >= requiredDays)
+        val requiredDays = if (restDays >= 7) 0 else 7 - restDays
+        val workoutStreak = calculateWorkoutStreak(completedSessions, requiredDays)
 
         // calcular calendário semanal
-        val (nutDays, wrkDays, wrkCount) = calculateWeeklyCalendar(nutritionLogs, completedSessions)
+        val (nutDays, wrkDays, wrkCount) = calculateWeeklyCalendar(nutritionLogs, completedSessions, workouts)
 
-        // calcular volumes semanais
+        // calcular volumes semanais globais
         val weeklyVolumes = calculateWeeklyVolumes(completedSetLogs)
+        
+        // agrupar exercícios por workout
+        val exercisesMap = allExercises.groupBy { it.workoutId }
+
+        // --- CALCULAR GRÁFICOS POR DATA ---
+        val workoutVolTrends = mutableMapOf<Int, MutableList<com.example.baselift.View.components.ChartDataPoint>>()
+        val exerciseVolTrends = mutableMapOf<Int, MutableList<com.example.baselift.View.components.ChartDataPoint>>()
+        val exerciseMaxWeightTrends = mutableMapOf<Int, MutableList<com.example.baselift.View.components.ChartDataPoint>>()
+
+        val setLogsByDate = completedSetLogs.groupBy { timestampToDateKey(it.timestamp) }
+        
+        setLogsByDate.forEach { (dateKey, logsForDate) ->
+            val parts = dateKey.split("-")
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.YEAR, parts[0].toInt())
+            cal.set(java.util.Calendar.DAY_OF_YEAR, parts[1].toInt())
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            cal.set(java.util.Calendar.MINUTE, 0)
+            cal.set(java.util.Calendar.SECOND, 0)
+            cal.set(java.util.Calendar.MILLISECOND, 0)
+            val midnightTs = cal.timeInMillis
+            val dateStr = java.text.SimpleDateFormat("MMM dd", java.util.Locale.US).format(java.util.Date(midnightTs))
+
+            // Workout Volume (Agrupar por workoutId)
+            val logsByWorkout = logsForDate.groupBy { log -> allExercises.find { it.id == log.exerciseId }?.workoutId ?: -1 }
+            logsByWorkout.forEach { (wId, wLogs) ->
+                if (wId != -1) {
+                    val wVol = wLogs.sumOf { (it.weight * it.reps).toDouble() }.toFloat()
+                    workoutVolTrends.getOrPut(wId) { mutableListOf() }.add(
+                        com.example.baselift.View.components.ChartDataPoint(
+                            xValue = midnightTs,
+                            yValue = wVol,
+                            tooltipLabel = "${String.format(java.util.Locale.US, "%.0f", wVol)} kg\n$dateStr"
+                        )
+                    )
+                }
+            }
+
+            // Exercise Volume & Max Weight
+            val logsByExercise = logsForDate.groupBy { it.exerciseId }
+            logsByExercise.forEach { (exId, exLogs) ->
+                val totalVolume = exLogs.sumOf { (it.weight * it.reps).toDouble() }.toFloat()
+                
+                val maxWeightLog = exLogs.maxWithOrNull(compareBy({ it.weight }, { it.reps }))
+                val maxWeight = maxWeightLog?.weight ?: 0f
+                val est1RM = if (maxWeightLog != null) maxWeight * (1 + maxWeightLog.reps / 30f) else 0f
+                
+                exerciseVolTrends.getOrPut(exId) { mutableListOf() }.add(
+                    com.example.baselift.View.components.ChartDataPoint(
+                        xValue = midnightTs,
+                        yValue = totalVolume,
+                        tooltipLabel = "${String.format(java.util.Locale.US, "%.0f", totalVolume)} kg\n$dateStr"
+                    )
+                )
+                
+                exerciseMaxWeightTrends.getOrPut(exId) { mutableListOf() }.add(
+                    com.example.baselift.View.components.ChartDataPoint(
+                        xValue = midnightTs,
+                        yValue = maxWeight,
+                        tooltipLabel = "${String.format(java.util.Locale.US, "%.1f", maxWeight)} kg\n$dateStr",
+                        extraValue = est1RM
+                    )
+                )
+            }
+        }
+        
+        // sort all lists by date ascending
+        workoutVolTrends.values.forEach { list -> list.sortBy { it.xValue } }
+        exerciseVolTrends.values.forEach { list -> list.sortBy { it.xValue } }
+        exerciseMaxWeightTrends.values.forEach { list -> list.sortBy { it.xValue } }
 
         DashboardUiState(
             nutritionStreak = nutritionStreak,
@@ -67,6 +168,10 @@ class DashboardViewModel(
             workoutSessionsThisWeek = wrkCount,
             weeklyVolumes = weeklyVolumes,
             workouts = workouts,
+            exercises = exercisesMap,
+            workoutVolumeTrends = workoutVolTrends,
+            exerciseVolumeTrends = exerciseVolTrends,
+            exerciseMaxWeightTrends = exerciseMaxWeightTrends,
             isLoading = false
         )
     }.stateIn(
@@ -106,8 +211,8 @@ class DashboardViewModel(
         return streak
     }
 
-    // conta o número total de DIAS de treino desde o início da streak atual (onde a streak só quebra se uma semana inteira passar com < 3 dias de treino)
-    private fun calculateWorkoutStreak(sessions: List<WorkoutSessionEntity>): Int {
+    // conta o número total de DIAS de treino desde o início da streak atual
+    private fun calculateWorkoutStreak(sessions: List<WorkoutSessionEntity>, requiredDays: Int): Int {
         if (sessions.isEmpty()) return 0
 
         // agrupar sessões por semana ISO (ano + semana)
@@ -125,8 +230,7 @@ class DashboardViewModel(
             return weekSessions.map { timestampToDateKey(it.timestamp) }.toSet().size
         }
 
-        // 1. A semana atual (mesmo que incompleta e com < 3 dias de treino) não quebra a streak.
-        // Adicionamos os dias de treino que já foram feitos esta semana.
+        // 1. A semana atual (mesmo que incompleta) não quebra a streak.
         val currentWeekKey = getIsoWeekKeyFromCalendar(cal)
         val currentCount = countUniqueDays(sessionsByWeek[currentWeekKey])
         totalStreakCount += currentCount
@@ -138,12 +242,11 @@ class DashboardViewModel(
             val weekKey = getIsoWeekKeyFromCalendar(cal)
             val count = countUniqueDays(sessionsByWeek[weekKey])
             
-            // se a semana anterior teve 3 ou mais dias de treino, a streak é válida
-            if (count >= 3) {
+            // se a semana anterior teve treinos >= requiredDays, a streak é válida
+            if (count >= requiredDays) {
                 totalStreakCount += count
                 cal.add(Calendar.WEEK_OF_YEAR, -1)
             } else {
-                // se uma semana (que já passou) teve menos de 3 dias de treino, a streak quebrou aí
                 break
             }
         }
@@ -154,8 +257,9 @@ class DashboardViewModel(
     // calcular que dias da semana atual têm dados
     private fun calculateWeeklyCalendar(
         nutritionLogs: List<NutritionLogEntity>,
-        sessions: List<WorkoutSessionEntity>
-    ): Triple<Set<Int>, Set<Int>, Int> {
+        sessions: List<WorkoutSessionEntity>,
+        workouts: List<WorkoutEntity>
+    ): Triple<Map<Int, NutritionSummary>, Map<Int, List<String>>, Int> {
         val cal = Calendar.getInstance()
         // recuar até à segunda-feira desta semana
         while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
@@ -170,15 +274,24 @@ class DashboardViewModel(
         cal.add(Calendar.DAY_OF_YEAR, 7)
         val weekEnd = cal.timeInMillis
 
-        val nutDays = mutableSetOf<Int>()
-        nutritionLogs.filter { it.timestamp in weekStart until weekEnd }.forEach {
-            nutDays.add(timestampToDayOfWeek(it.timestamp))
+        val nutDays = mutableMapOf<Int, NutritionSummary>()
+        nutritionLogs.filter { it.timestamp in weekStart until weekEnd }.forEach { log ->
+            val day = timestampToDayOfWeek(log.timestamp)
+            val current = nutDays[day] ?: NutritionSummary(0, 0, 0, 0)
+            nutDays[day] = NutritionSummary(
+                calories = current.calories + log.calories,
+                protein = current.protein + log.protein,
+                carbs = current.carbs + log.carbs,
+                fats = current.fats + log.fats
+            )
         }
 
-        val wrkDays = mutableSetOf<Int>()
+        val wrkDays = mutableMapOf<Int, MutableList<String>>()
         val weekSessions = sessions.filter { it.timestamp in weekStart until weekEnd }
-        weekSessions.forEach {
-            wrkDays.add(timestampToDayOfWeek(it.timestamp))
+        weekSessions.forEach { session ->
+            val day = timestampToDayOfWeek(session.timestamp)
+            val workoutName = workouts.find { it.id == session.workoutId }?.name ?: "Unknown"
+            wrkDays.getOrPut(day) { mutableListOf() }.add(workoutName)
         }
 
         return Triple(nutDays, wrkDays, weekSessions.size)
