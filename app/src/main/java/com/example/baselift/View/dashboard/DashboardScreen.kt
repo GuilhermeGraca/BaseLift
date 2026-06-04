@@ -11,6 +11,8 @@ import com.example.baselift.View.dashboard.components.TotalTrainingVolumeSection
 import com.example.baselift.View.dashboard.components.RoutinesSection
 import com.example.baselift.View.theme.PureBlack
 import com.example.baselift.ViewModel.dashboard.DashboardUiState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 // ecrã principal do dashboard
 @Composable
@@ -19,6 +21,12 @@ fun DashboardScreen(
     onSetRestDays: (Int) -> Unit = {},
     onSetNutritionRestDays: (Int) -> Unit = {}
 ) {
+    var isContentReady by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(50)
+        isContentReady = true
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -49,12 +57,14 @@ fun DashboardScreen(
         }
 
         // secção de rotinas (carregada lazy)
-        RoutinesSection(
-            workouts = uiState.workouts,
-            exercisesMap = uiState.exercises,
-            workoutVolumeTrends = uiState.workoutVolumeTrends,
-            exerciseVolumeTrends = uiState.exerciseVolumeTrends,
-            exerciseMaxWeightTrends = uiState.exerciseMaxWeightTrends
-        )
+        if (isContentReady) {
+            RoutinesSection(
+                workouts = uiState.workouts,
+                exercisesMap = uiState.exercises,
+                workoutVolumeTrends = uiState.workoutVolumeTrends,
+                exerciseVolumeTrends = uiState.exerciseVolumeTrends,
+                exerciseMaxWeightTrends = uiState.exerciseMaxWeightTrends
+            )
+        }
     }
 }

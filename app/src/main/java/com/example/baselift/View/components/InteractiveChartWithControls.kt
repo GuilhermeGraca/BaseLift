@@ -479,37 +479,57 @@ fun CustomCanvasChart(
                         textAlign = android.graphics.Paint.Align.CENTER
                     }
                     val textBounds = android.graphics.Rect()
-                    tooltipPaint.getTextBounds(textStr, 0, textStr.length, textBounds)
                     
-                    val tooltipWidth = textBounds.width() + 40f
-                    val tooltipHeight = textBounds.height() + 30f
+                    val lines = textStr.split("\n")
+                    var maxWidth = 0f
+                    var totalTextHeight = 0f
+                    val lineHeights = mutableListOf<Float>()
+                    
+                    lines.forEach { line ->
+                        tooltipPaint.getTextBounds(line, 0, line.length, textBounds)
+                        val w = textBounds.width().toFloat()
+                        if (w > maxWidth) maxWidth = w
+                        val h = textBounds.height().toFloat()
+                        totalTextHeight += h
+                        lineHeights.add(h)
+                    }
+                    
+                    val lineSpacing = 16f
+                    val tooltipWidth = maxWidth + 48f
+                    val tooltipHeight = totalTextHeight + (lines.size - 1) * lineSpacing + 40f
                     
                     var tooltipX = selectedOffset.x
                     if (tooltipX - tooltipWidth/2 < 0) tooltipX = tooltipWidth/2
                     if (tooltipX + tooltipWidth/2 > width) tooltipX = width - tooltipWidth/2
                     
-                    val tooltipY = selectedOffset.y - tooltipHeight - 20f
+                    var tooltipY = selectedOffset.y - tooltipHeight - 30f
+                    if (tooltipY < 0f) tooltipY = selectedOffset.y + 30f
                     
                     drawRoundRect(
-                        color = PureBlack.copy(alpha = 0.8f),
+                        color = PureBlack.copy(alpha = 0.9f),
                         topLeft = Offset(tooltipX - tooltipWidth/2, tooltipY),
                         size = Size(tooltipWidth, tooltipHeight),
-                        cornerRadius = GeoCornerRadius(16f, 16f)
+                        cornerRadius = GeoCornerRadius(12f, 12f)
                     )
                     drawRoundRect(
-                        color = lineColor,
+                        color = lineColor.copy(alpha = 0.8f),
                         topLeft = Offset(tooltipX - tooltipWidth/2, tooltipY),
                         size = Size(tooltipWidth, tooltipHeight),
-                        cornerRadius = GeoCornerRadius(16f, 16f),
-                        style = Stroke(width = 2f)
+                        cornerRadius = GeoCornerRadius(12f, 12f),
+                        style = Stroke(width = 3f)
                     )
                     
-                    drawContext.canvas.nativeCanvas.drawText(
-                        textStr,
-                        tooltipX,
-                        tooltipY + tooltipHeight/2 + textBounds.height()/2,
-                        tooltipPaint
-                    )
+                    var currentY = tooltipY + 20f
+                    lines.forEachIndexed { i, line ->
+                        val h = lineHeights[i]
+                        drawContext.canvas.nativeCanvas.drawText(
+                            line,
+                            tooltipX,
+                            currentY + h,
+                            tooltipPaint
+                        )
+                        currentY += h + lineSpacing
+                    }
                 }
             }
         }

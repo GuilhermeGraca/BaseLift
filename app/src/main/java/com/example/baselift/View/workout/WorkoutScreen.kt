@@ -45,6 +45,13 @@ fun WorkoutScreen(
     var showAddWorkoutDialog by remember { mutableStateOf(false) }
     var showAddExerciseDialog by remember { mutableStateOf(false) }
     var workoutToDelete by remember { mutableStateOf<WorkoutEntity?>(null) }
+    
+    // Defer rendering of heavy lists by a few frames to make tab transition perfectly smooth
+    var isContentReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(50)
+        isContentReady = true
+    }
 
     if (workoutToDelete != null) {
         ConfirmDeleteDialog(
@@ -131,7 +138,7 @@ fun WorkoutScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // lista de exercícios
-            if (uiState.selectedWorkout != null) {
+            if (uiState.selectedWorkout != null && isContentReady) {
                 LazyColumn(
                     modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(bottom = 120.dp) // espaço para elementos flutuantes
