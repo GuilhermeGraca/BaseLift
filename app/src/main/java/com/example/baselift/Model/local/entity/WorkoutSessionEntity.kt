@@ -15,7 +15,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("workoutId")]
+    indices = [Index("workoutId"), Index("isCompleted"), Index("timestamp")]
 )
 data class WorkoutSessionEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,

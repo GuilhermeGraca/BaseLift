@@ -17,7 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius as GeoCornerRadius
@@ -293,7 +293,7 @@ fun CustomCanvasChart(
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var selectedOffset by remember { mutableStateOf(Offset.Zero) }
 
-    Canvas(modifier = Modifier
+    Spacer(modifier = Modifier
         .fillMaxSize()
         .padding(top = 16.dp, bottom = 16.dp, end = 24.dp, start = 8.dp)
         .pointerInput(validPoints, isChronologicalScale) {
@@ -353,160 +353,165 @@ fun CustomCanvasChart(
                 }
             }
         }
-    ) {
-        val width = size.width
-        val height = size.height
-        
-        val leftPadding = 80f
-        val bottomPadding = 40f
-        val topPadding = 40f 
-        
-        val chartWidth = width - leftPadding
-        val chartHeight = height - bottomPadding
-        
-        drawLine(color = MediumGrey, start = Offset(leftPadding, topPadding), end = Offset(leftPadding, chartHeight), strokeWidth = 2f)
-        drawLine(color = MediumGrey, start = Offset(leftPadding, chartHeight), end = Offset(width, chartHeight), strokeWidth = 2f)
-        
-        val yPadding = if (maxY == minY) 5f else (maxY - minY) * 0.2f
-        var yMin = (minY - yPadding).coerceAtLeast(0f)
-        var yMax = maxY + yPadding
-        
-        if (targetValue != null) {
-            if (targetValue < yMin) yMin = (targetValue - yPadding).coerceAtLeast(0f)
-            if (targetValue > yMax) yMax = targetValue + yPadding
-        }
-        
-        val yRange = yMax - yMin
-        val drawHeight = chartHeight - topPadding
-        
-        if (targetValue != null && targetValue in yMin..yMax) {
-            val yPos = topPadding + drawHeight - ((targetValue - yMin) / yRange) * drawHeight
-            drawLine(
-                color = targetLineColor,
-                start = Offset(leftPadding, yPos),
-                end = Offset(width, yPos),
-                strokeWidth = 3f,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f))
+        .drawWithCache {
+            val width = size.width
+            val height = size.height
+            
+            val leftPadding = 80f
+            val bottomPadding = 40f
+            val topPadding = 40f
+            
+            val chartWidth = width - leftPadding
+            val chartHeight = height - bottomPadding
+            
+            val yPadding = if (maxY == minY) 5f else (maxY - minY) * 0.2f
+            var yMin = (minY - yPadding).coerceAtLeast(0f)
+            var yMax = maxY + yPadding
+            
+            if (targetValue != null) {
+                if (targetValue < yMin) yMin = (targetValue - yPadding).coerceAtLeast(0f)
+                if (targetValue > yMax) yMax = targetValue + yPadding
+            }
+            
+            val yRange = yMax - yMin
+            val drawHeight = chartHeight - topPadding
+            
+            val path = Path()
+            val points = mutableListOf<Offset>()
+            
+            val minTime = validPoints.first().xValue
+            val maxTime = validPoints.last().xValue
+            val timeRange = maxTime - minTime
+            
+            validPoints.forEachIndexed { index, log ->
+                val x = if (isChronologicalScale) {
+                    if (timeRange == 0L) leftPadding + chartWidth / 2f
+                    else leftPadding + ((log.xValue - minTime).toFloat() / timeRange.toFloat()) * chartWidth
+                } else {
+                    val stepX = if (validPoints.size > 1) chartWidth / (validPoints.size - 1) else chartWidth / 2f
+                    leftPadding + (index * stepX)
+                }
+                
+                val y = topPadding + drawHeight - ((log.yValue - yMin) / yRange) * drawHeight
+                points.add(Offset(x, y))
+                
+                if (index == 0) path.moveTo(x, y)
+                else path.lineTo(x, y)
+            }
+            
+            val fillPath = if (points.isNotEmpty()) {
+                Path().apply {
+                    addPath(path)
+                    lineTo(points.last().x, chartHeight)
+                    lineTo(points.first().x, chartHeight)
+                    close()
+                }
+            } else null
+            
+            val gradientBrush = Brush.verticalGradient(
+                colors = listOf(lineColor.copy(alpha = 0.6f), Color.Transparent),
+                startY = topPadding,
+                endY = chartHeight
             )
-            drawContext.canvas.nativeCanvas.drawText(formatYLabel(targetValue), leftPadding + 10f, yPos - 10f, targetPaint)
-        }
-        
-        val path = Path()
-        val points = mutableListOf<Offset>()
-        
-        val minTime = validPoints.first().xValue
-        val maxTime = validPoints.last().xValue
-        val timeRange = maxTime - minTime
-        
-        validPoints.forEachIndexed { index, log ->
-            val x = if (isChronologicalScale) {
-                if (timeRange == 0L) leftPadding + chartWidth / 2f
-                else leftPadding + ((log.xValue - minTime).toFloat() / timeRange.toFloat()) * chartWidth
-            } else {
-                val stepX = if (validPoints.size > 1) chartWidth / (validPoints.size - 1) else chartWidth / 2f
-                leftPadding + (index * stepX)
-            }
             
-            val y = topPadding + drawHeight - ((log.yValue - yMin) / yRange) * drawHeight
-            points.add(Offset(x, y))
-            
-            if (index == 0) path.moveTo(x, y)
-            else path.lineTo(x, y)
-        }
-        
-        if (points.isNotEmpty()) {
-            val fillPath = Path().apply {
-                addPath(path)
-                lineTo(points.last().x, chartHeight)
-                lineTo(points.first().x, chartHeight)
-                close()
-            }
-            drawPath(
-                path = fillPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(lineColor.copy(alpha = 0.6f), Color.Transparent),
-                    startY = topPadding,
-                    endY = chartHeight
+            onDrawBehind {
+                drawLine(color = MediumGrey, start = Offset(leftPadding, topPadding), end = Offset(leftPadding, chartHeight), strokeWidth = 2f)
+                drawLine(color = MediumGrey, start = Offset(leftPadding, chartHeight), end = Offset(width, chartHeight), strokeWidth = 2f)
+                
+                if (targetValue != null && targetValue in yMin..yMax) {
+                    val yPos = topPadding + drawHeight - ((targetValue - yMin) / yRange) * drawHeight
+                    drawLine(
+                        color = targetLineColor,
+                        start = Offset(leftPadding, yPos),
+                        end = Offset(width, yPos),
+                        strokeWidth = 3f,
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 15f))
+                    )
+                    drawContext.canvas.nativeCanvas.drawText(formatYLabel(targetValue), leftPadding + 10f, yPos - 10f, targetPaint)
+                }
+                
+                if (fillPath != null) {
+                    drawPath(path = fillPath, brush = gradientBrush)
+                }
+                
+                drawPath(
+                    path = path,
+                    color = lineColor,
+                    style = Stroke(width = 6f)
                 )
-            )
-        }
-        
-        drawPath(
-            path = path,
-            color = lineColor,
-            style = Stroke(width = 6f)
-        )
-        
-        points.forEach { pt ->
-            drawCircle(color = PureBlack, radius = 10f, center = pt)
-            drawCircle(color = lineColor, radius = 10f, center = pt, style = Stroke(width = 4f))
-        }
-        
-        drawContext.canvas.nativeCanvas.drawText(formatYLabel(yMax), 0f, topPadding + 15f, textPaint)
-        val yMid = (yMax + yMin) / 2
-        val yMidPos = topPadding + drawHeight / 2
-        drawContext.canvas.nativeCanvas.drawText(formatYLabel(yMid), 0f, yMidPos + 10f, textPaint)
-        drawContext.canvas.nativeCanvas.drawText(formatYLabel(yMin), 0f, chartHeight, textPaint)
-
-        if (validPoints.isNotEmpty()) {
-            val startText = formatXLabel(validPoints.first().xValue)
-            drawContext.canvas.nativeCanvas.drawText(startText, leftPadding, 25f, dateTextPaint.apply { textAlign = android.graphics.Paint.Align.LEFT })
-            
-            if (validPoints.size > 2) {
-                val midIndex = validPoints.size / 2
-                val midText = formatXLabel(validPoints[midIndex].xValue)
-                val midX = leftPadding + (chartWidth / 2f)
-                drawContext.canvas.nativeCanvas.drawText(midText, midX, 25f, dateTextPaint.apply { textAlign = android.graphics.Paint.Align.CENTER })
+                
+                points.forEach { pt ->
+                    drawCircle(color = PureBlack, radius = 10f, center = pt)
+                    drawCircle(color = lineColor, radius = 10f, center = pt, style = Stroke(width = 4f))
+                }
+                
+                drawContext.canvas.nativeCanvas.drawText(formatYLabel(yMax), 0f, topPadding + 15f, textPaint)
+                val yMid = (yMax + yMin) / 2
+                val yMidPos = topPadding + drawHeight / 2
+                drawContext.canvas.nativeCanvas.drawText(formatYLabel(yMid), 0f, yMidPos + 10f, textPaint)
+                drawContext.canvas.nativeCanvas.drawText(formatYLabel(yMin), 0f, chartHeight, textPaint)
+                
+                if (validPoints.isNotEmpty()) {
+                    val startText = formatXLabel(validPoints.first().xValue)
+                    drawContext.canvas.nativeCanvas.drawText(startText, leftPadding, 25f, dateTextPaint.apply { textAlign = android.graphics.Paint.Align.LEFT })
+                    
+                    if (validPoints.size > 2) {
+                        val midIndex = validPoints.size / 2
+                        val midText = formatXLabel(validPoints[midIndex].xValue)
+                        val midX = leftPadding + (chartWidth / 2f)
+                        drawContext.canvas.nativeCanvas.drawText(midText, midX, 25f, dateTextPaint.apply { textAlign = android.graphics.Paint.Align.CENTER })
+                    }
+                    
+                    if (validPoints.size > 1) {
+                        val endText = formatXLabel(validPoints.last().xValue)
+                        drawContext.canvas.nativeCanvas.drawText(endText, width, 25f, dateTextPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT })
+                    }
+                }
+                
+                selectedIndex?.let { index ->
+                    val log = validPoints[index]
+                    val textStr = log.tooltipLabel
+                    
+                    val tooltipPaint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.WHITE
+                        textSize = 32f
+                        isAntiAlias = true
+                        textAlign = android.graphics.Paint.Align.CENTER
+                    }
+                    val textBounds = android.graphics.Rect()
+                    tooltipPaint.getTextBounds(textStr, 0, textStr.length, textBounds)
+                    
+                    val tooltipWidth = textBounds.width() + 40f
+                    val tooltipHeight = textBounds.height() + 30f
+                    
+                    var tooltipX = selectedOffset.x
+                    if (tooltipX - tooltipWidth/2 < 0) tooltipX = tooltipWidth/2
+                    if (tooltipX + tooltipWidth/2 > width) tooltipX = width - tooltipWidth/2
+                    
+                    val tooltipY = selectedOffset.y - tooltipHeight - 20f
+                    
+                    drawRoundRect(
+                        color = PureBlack.copy(alpha = 0.8f),
+                        topLeft = Offset(tooltipX - tooltipWidth/2, tooltipY),
+                        size = Size(tooltipWidth, tooltipHeight),
+                        cornerRadius = GeoCornerRadius(16f, 16f)
+                    )
+                    drawRoundRect(
+                        color = lineColor,
+                        topLeft = Offset(tooltipX - tooltipWidth/2, tooltipY),
+                        size = Size(tooltipWidth, tooltipHeight),
+                        cornerRadius = GeoCornerRadius(16f, 16f),
+                        style = Stroke(width = 2f)
+                    )
+                    
+                    drawContext.canvas.nativeCanvas.drawText(
+                        textStr,
+                        tooltipX,
+                        tooltipY + tooltipHeight/2 + textBounds.height()/2,
+                        tooltipPaint
+                    )
+                }
             }
-
-            if (validPoints.size > 1) {
-                val endText = formatXLabel(validPoints.last().xValue)
-                drawContext.canvas.nativeCanvas.drawText(endText, width, 25f, dateTextPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT })
-            }
         }
-
-        selectedIndex?.let { index ->
-            val log = validPoints[index]
-            val textStr = log.tooltipLabel
-            
-            val tooltipPaint = android.graphics.Paint().apply {
-                color = android.graphics.Color.WHITE
-                textSize = 32f
-                isAntiAlias = true
-                textAlign = android.graphics.Paint.Align.CENTER
-            }
-            val textBounds = android.graphics.Rect()
-            tooltipPaint.getTextBounds(textStr, 0, textStr.length, textBounds)
-            
-            val tooltipWidth = textBounds.width() + 40f
-            val tooltipHeight = textBounds.height() + 30f
-            
-            var tooltipX = selectedOffset.x
-            if (tooltipX - tooltipWidth/2 < 0) tooltipX = tooltipWidth/2
-            if (tooltipX + tooltipWidth/2 > width) tooltipX = width - tooltipWidth/2
-            
-            val tooltipY = selectedOffset.y - tooltipHeight - 20f
-            
-            drawRoundRect(
-                color = PureBlack.copy(alpha = 0.8f),
-                topLeft = Offset(tooltipX - tooltipWidth/2, tooltipY),
-                size = Size(tooltipWidth, tooltipHeight),
-                cornerRadius = GeoCornerRadius(16f, 16f)
-            )
-            drawRoundRect(
-                color = lineColor,
-                topLeft = Offset(tooltipX - tooltipWidth/2, tooltipY),
-                size = Size(tooltipWidth, tooltipHeight),
-                cornerRadius = GeoCornerRadius(16f, 16f),
-                style = Stroke(width = 2f)
-            )
-            
-            drawContext.canvas.nativeCanvas.drawText(
-                textStr,
-                tooltipX,
-                tooltipY + tooltipHeight/2 + textBounds.height()/2,
-                tooltipPaint
-            )
-        }
-    }
+    )
 }

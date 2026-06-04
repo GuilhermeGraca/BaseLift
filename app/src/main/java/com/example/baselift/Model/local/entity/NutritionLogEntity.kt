@@ -3,8 +3,13 @@ package com.example.baselift.Model.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+import androidx.room.Index
+
 // entidade para cada entrada de calorias e macros
-@Entity(tableName = "nutrition_logs")
+@Entity(
+    tableName = "nutrition_logs",
+    indices = [Index(value = ["timestamp"])]
+)
 data class NutritionLogEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,

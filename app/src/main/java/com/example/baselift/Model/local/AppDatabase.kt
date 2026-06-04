@@ -43,7 +43,7 @@ import com.example.baselift.Model.local.dao.NutritionDao
     ], // lista de entidades que a base de dados vai ter
                    // cada entidade é uma data class anotada com @Entity
 
-    version = 9, // versão 9 com a adição das entidades de nutrição
+    version = 10, // versão 10 com a adição de índices para performance
 
     exportSchema = false // false porque não precisamos exportar o esquema para JSON
                          // e assim evitamos configurar a pasta de destino
@@ -82,6 +82,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // migração 9 para 10 adiciona índices para performance
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_weight_logs_timestamp` ON `weight_logs` (`timestamp`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_photo_logs_timestamp` ON `photo_logs` (`timestamp`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_nutrition_logs_timestamp` ON `nutrition_logs` (`timestamp`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_set_logs_isCompleted` ON `set_logs` (`isCompleted`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_set_logs_timestamp` ON `set_logs` (`timestamp`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_sessions_isCompleted` ON `workout_sessions` (`isCompleted`)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS `index_workout_sessions_timestamp` ON `workout_sessions` (`timestamp`)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -92,7 +105,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "baselift_database"
                 )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
                 .build()
                 INSTANCE = instance
                 instance

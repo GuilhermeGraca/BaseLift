@@ -14,9 +14,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import androidx.compose.runtime.Stable
 
 // estado da vista de nutrição
+@Stable
 data class NutritionUiState(
     val targetCalories: Int = 0,
     val targetProtein: Int = 0,

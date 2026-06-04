@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -232,10 +233,16 @@ fun ExerciseCollapsibleCard(
     val filters = listOf("1M", "3M", "1Y", "ALL")
 
     val context = androidx.compose.ui.platform.LocalContext.current
-    val sharedPrefs = remember { context.getSharedPreferences("baselift_targets", android.content.Context.MODE_PRIVATE) }
-    var targetWeight by remember { 
-        val saved = sharedPrefs.getFloat("target_weight_${exercise.id}", -1f)
-        mutableStateOf(if (saved == -1f) null else saved)
+    var targetWeight by remember { mutableStateOf<Float?>(null) }
+    
+    LaunchedEffect(exercise.id) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val sharedPrefs = context.getSharedPreferences("baselift_targets", android.content.Context.MODE_PRIVATE)
+            val saved = sharedPrefs.getFloat("target_weight_${exercise.id}", -1f)
+            if (saved != -1f) {
+                targetWeight = saved
+            }
+        }
     }
 
     Column(
@@ -417,10 +424,14 @@ fun ExerciseCollapsibleCard(
                         targetValue = targetWeight,
                         onSetTargetValue = { newTarget: Float? ->
                             targetWeight = newTarget
-                            val editor = sharedPrefs.edit()
-                            if (newTarget == null) editor.remove("target_weight_${exercise.id}")
-                            else editor.putFloat("target_weight_${exercise.id}", newTarget)
-                            editor.apply()
+                            val ctx = context
+                            kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                val sharedPrefs = ctx.getSharedPreferences("baselift_targets", android.content.Context.MODE_PRIVATE)
+                                val editor = sharedPrefs.edit()
+                                if (newTarget == null) editor.remove("target_weight_${exercise.id}")
+                                else editor.putFloat("target_weight_${exercise.id}", newTarget)
+                                editor.apply()
+                            }
                         },
                         showTimeFilters = false,
                         showTargetControls = true,

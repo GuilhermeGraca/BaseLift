@@ -16,13 +16,16 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flowOn
 import java.util.Calendar
 import java.util.Locale
+import androidx.compose.runtime.Stable
 
 // volume agregado por semana
+@Stable
 data class WeeklyVolume(
     val weekStartTimestamp: Long,
     val totalVolume: Float
 )
 
+@Stable
 data class NutritionSummary(
     val calories: Int,
     val protein: Int,
@@ -31,6 +34,7 @@ data class NutritionSummary(
 )
 
 // estado da vista do dashboard
+@Stable
 data class DashboardUiState(
     val nutritionStreak: Int = 0,
     val workoutStreak: Int = 0,
@@ -44,6 +48,8 @@ data class DashboardUiState(
     val exerciseVolumeTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
     val exerciseMaxWeightTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
     val historicalCalendarData: Map<String, com.example.baselift.View.components.DayMarkerState> = emptyMap(),
+    val restDays: Int = 4,
+    val nutritionRestDays: Int = 0,
     val isLoading: Boolean = true
 )
 
@@ -216,6 +222,8 @@ class DashboardViewModel(
             exerciseVolumeTrends = exerciseVolTrends,
             exerciseMaxWeightTrends = exerciseMaxWeightTrends,
             historicalCalendarData = calendarData,
+            restDays = restDays,
+            nutritionRestDays = nutritionRestDays,
             isLoading = false
         )
     }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(

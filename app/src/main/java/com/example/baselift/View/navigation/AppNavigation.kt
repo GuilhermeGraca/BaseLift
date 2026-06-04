@@ -223,23 +223,29 @@ fun AppNavigation(
 
                 composable(Routes.DASHBOARD) {
                     val context = androidx.compose.ui.platform.LocalContext.current
-                    val sharedPrefs = context.getSharedPreferences("baselift_settings", android.content.Context.MODE_PRIVATE)
                     
                     LaunchedEffect(Unit) {
-                        dashboardViewModel.setRestDays(sharedPrefs.getInt("workout_rest_days", 4))
-                        dashboardViewModel.setNutritionRestDays(sharedPrefs.getInt("nutrition_rest_days", 0))
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val sharedPrefs = context.getSharedPreferences("baselift_settings", android.content.Context.MODE_PRIVATE)
+                            val wrDays = sharedPrefs.getInt("workout_rest_days", 4)
+                            val nrDays = sharedPrefs.getInt("nutrition_rest_days", 0)
+                            dashboardViewModel.setRestDays(wrDays)
+                            dashboardViewModel.setNutritionRestDays(nrDays)
+                        }
                     }
                     
                     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
                     DashboardScreen(
                         uiState = dashboardUiState,
                         onSetRestDays = { days ->
-                            sharedPrefs.edit().putInt("workout_rest_days", days).apply()
                             dashboardViewModel.setRestDays(days)
+                            val sharedPrefs = context.getSharedPreferences("baselift_settings", android.content.Context.MODE_PRIVATE)
+                            sharedPrefs.edit().putInt("workout_rest_days", days).apply()
                         },
                         onSetNutritionRestDays = { days ->
-                            sharedPrefs.edit().putInt("nutrition_rest_days", days).apply()
                             dashboardViewModel.setNutritionRestDays(days)
+                            val sharedPrefs = context.getSharedPreferences("baselift_settings", android.content.Context.MODE_PRIVATE)
+                            sharedPrefs.edit().putInt("nutrition_rest_days", days).apply()
                         }
                     )
                 }

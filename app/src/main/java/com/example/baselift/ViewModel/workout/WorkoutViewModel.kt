@@ -11,7 +11,10 @@ import com.example.baselift.Model.local.entity.WorkoutSessionEntity
 import com.example.baselift.Model.repository.WorkoutRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import androidx.compose.runtime.Stable
 
+@Stable
 data class SetUiModel(
     val setNumber: Int,
     val currentLog: SetLogEntity?, // null se ainda n tiver sido preenchido nesta sessao
@@ -23,11 +26,13 @@ data class SetUiModel(
     val canBeRemoved: Boolean = false
 )
 
+@Stable
 data class ExerciseUiModel(
     val exercise: ExerciseEntity,
     val sets: List<SetUiModel>
 )
 
+@Stable
 data class WorkoutUiState(
     val workouts: List<WorkoutEntity> = emptyList(),
     val selectedWorkout: WorkoutEntity? = null,
@@ -62,9 +67,22 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
     fun getDraftReps(exerciseId: Int, setNumber: Int): String =
         draftReps[draftKey(exerciseId, setNumber)] ?: ""
 
+    // cache para as queries de getPreviousSet (evita N+1 queries a cada emissão do combine)
+    private val previousSetsCache = mutableMapOf<String, SetLogEntity?>()
+
+    private suspend fun getCachedPreviousSet(exerciseId: Int, setNumber: Int): SetLogEntity? {
+        val key = "${exerciseId}_$setNumber"
+        if (!previousSetsCache.containsKey(key)) {
+            val prev = repository.getPreviousSet(exerciseId, setNumber)
+            previousSetsCache[key] = prev
+        }
+        return previousSetsCache[key]
+    }
+
     private fun clearDrafts() {
         draftWeights.clear()
         draftReps.clear()
+        previousSetsCache.clear() // limpar a cache quando o treino termina
     }
 
     // guarda o trabalho ativo de seleção de treino para poder cancelar antes de começar outro
@@ -97,6 +115,9 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
             // iniciar ou obter a sessão
             val session = repository.startOrGetSession(workout.id)
             _uiState.update { it.copy(activeSession = session) }
+            
+            // limpar cache ao trocar de treino
+            previousSetsCache.clear()
 
             // observar exercícios para este treino
             repository.getExercisesForWorkout(workout.id).combine(repository.getSetsForSession(session.id)) { exercises, setLogs ->
@@ -114,7 +135,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
 
                     val uiSets = (1..maxSetNumber).map { setNum ->
                         val currentLog = exerciseSets.find { it.setNumber == setNum }
-                        val prevLog = repository.getPreviousSet(exercise.id, setNum)
+                        val prevLog = getCachedPreviousSet(exercise.id, setNum)
 
                         val isSetCompleted = currentLog?.isCompleted == true
                         val isLastCompleted = setNum == maxCompleted
@@ -136,7 +157,7 @@ class WorkoutViewModel(private val repository: WorkoutRepository) : ViewModel() 
                     }
                     ExerciseUiModel(exercise, uiSets)
                 }
-            }.collect { exerciseModels ->
+            }.flowOn(Dispatchers.IO).collect { exerciseModels ->
                 _uiState.update { it.copy(exercises = exerciseModels) }
             }
         }

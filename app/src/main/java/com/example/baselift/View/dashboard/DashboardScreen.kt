@@ -35,6 +35,8 @@ fun DashboardScreen(
                 workoutDaysThisWeek = uiState.workoutDaysThisWeek,
                 workoutSessionsThisWeek = uiState.workoutSessionsThisWeek,
                 historicalCalendarData = uiState.historicalCalendarData,
+                restDays = uiState.restDays,
+                nutritionRestDays = uiState.nutritionRestDays,
                 onSetRestDays = onSetRestDays,
                 onSetNutritionRestDays = onSetNutritionRestDays
             )

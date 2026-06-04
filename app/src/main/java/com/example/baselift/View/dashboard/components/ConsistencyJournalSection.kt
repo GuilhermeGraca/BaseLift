@@ -35,6 +35,8 @@ fun ConsistencyJournalSection(
     workoutDaysThisWeek: Map<Int, List<String>>,
     workoutSessionsThisWeek: Int,
     historicalCalendarData: Map<String, com.example.baselift.View.components.DayMarkerState>,
+    restDays: Int,
+    nutritionRestDays: Int,
     onSetRestDays: (Int) -> Unit = {},
     onSetNutritionRestDays: (Int) -> Unit = {}
 ) {
@@ -47,13 +49,11 @@ fun ConsistencyJournalSection(
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val sharedPrefs = context.getSharedPreferences("baselift_settings", android.content.Context.MODE_PRIVATE)
     var showRestDaysDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var restDaysInput by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(sharedPrefs.getInt("workout_rest_days", 4)) }
+    var restDaysInput by androidx.compose.runtime.remember(restDays) { androidx.compose.runtime.mutableStateOf(restDays) }
 
     var showNutritionRestDaysDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    var nutritionRestDaysInput by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(sharedPrefs.getInt("nutrition_rest_days", 0)) }
+    var nutritionRestDaysInput by androidx.compose.runtime.remember(nutritionRestDays) { androidx.compose.runtime.mutableStateOf(nutritionRestDays) }
 
     var showCalendarDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var clickedMarker by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.example.baselift.View.components.DayMarkerState?>(null) }
