@@ -14,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -118,240 +119,248 @@ fun InsightsScreen(
         }
     }
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(PureBlack)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp)
-            .systemBarsPadding()
+            .systemBarsPadding(),
+        contentPadding = PaddingValues(24.dp)
     ) {
-        // cabeçalho de perfil
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // fotografia de perfil
-            Box(
-                modifier = Modifier.size(105.dp)
+        item {
+            // cabeçalho de perfil
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // fotografia de perfil
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .border(2.dp, NeonGreen, CircleShape)
-                        .background(DeepCharcoal)
-                        .clickable {
-                            profilePhotoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
-                    contentAlignment = Alignment.Center
+                    modifier = Modifier.size(105.dp)
                 ) {
-                    if (!user?.profilePhotoUri.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = user?.profilePhotoUri,
-                            contentDescription = "Profile Photo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .border(2.dp, NeonGreen, CircleShape)
+                            .background(DeepCharcoal)
+                            .clickable {
+                                profilePhotoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!user?.profilePhotoUri.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = user?.profilePhotoUri,
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "No Profile Photo",
+                                tint = MediumGrey,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
+
+                    // ícone da câmara
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .align(Alignment.BottomEnd)
+                            .offset(x = (-4).dp, y = (-4).dp)
+                            .clip(CircleShape)
+                            .background(NeonGreen)
+                            .clickable {
+                                profilePhotoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "No Profile Photo",
-                            tint = MediumGrey,
-                            modifier = Modifier.size(48.dp)
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = "Change Photo",
+                            tint = PureBlack,
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
 
-                // ícone da câmara
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // nome do utilizador
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { showNameDialog = true }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = (user?.name ?: "SEM NOME").uppercase(),
+                        color = CrystalWhite,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Name",
+                        tint = MediumGrey,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        item {
+            // métricas base
+            Text("Baseline Metrics", color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                MetricCard(label = "GENDER", value = uiState.gender, unit = "", icon = Icons.Default.Person, modifier = Modifier.weight(1f))
+                MetricCard(label = "AGE", value = uiState.age.toString(), unit = "YRS", icon = Icons.Default.DateRange, modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                MetricCard(label = "HEIGHT", value = uiState.height.toString(), unit = uiState.preferredHeightUnit, icon = Icons.Default.Height, modifier = Modifier.weight(1f))
+                MetricCard(
+                    label = "CURRENT WEIGHT", 
+                    value = uiState.weight.toString(), 
+                    unit = uiState.preferredWeightUnit, 
+                    icon = Icons.Default.FitnessCenter,
+                    modifier = Modifier.weight(1f),
+                    borderColor = NeonGreen,
+                    valueColor = NeonGreen
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            MetricCard(label = "LIFESTYLE", value = uiState.activityLevel.uppercase(), unit = "", icon = Icons.Default.DirectionsRun, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        item {
+            // botão de recalibrar
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
-                        .align(Alignment.BottomEnd)
-                        .offset(x = (-4).dp, y = (-4).dp)
-                        .clip(CircleShape)
-                        .background(NeonGreen)
-                        .clickable {
-                            profilePhotoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
+                        .wrapContentWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(DarkSurface)
+                        .clickable { onRecalibrate() }
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Change Photo",
-                        tint = PureBlack,
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Recalibrate", tint = NeonGreen, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("RECALIBRATE BASELINE", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // nome do utilizador
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable { showNameDialog = true }
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = (user?.name ?: "SEM NOME").uppercase(),
-                    color = CrystalWhite,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit Name",
-                    tint = MediumGrey,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // métricas base
-        Text("Baseline Metrics", color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard(label = "GENDER", value = uiState.gender, unit = "", icon = Icons.Default.Person, modifier = Modifier.weight(1f))
-            MetricCard(label = "AGE", value = uiState.age.toString(), unit = "YRS", icon = Icons.Default.DateRange, modifier = Modifier.weight(1f))
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            MetricCard(label = "HEIGHT", value = uiState.height.toString(), unit = uiState.preferredHeightUnit, icon = Icons.Default.Height, modifier = Modifier.weight(1f))
-            MetricCard(
-                label = "CURRENT WEIGHT", 
-                value = uiState.weight.toString(), 
-                unit = uiState.preferredWeightUnit, 
-                icon = Icons.Default.FitnessCenter,
-                modifier = Modifier.weight(1f),
-                borderColor = NeonGreen,
-                valueColor = NeonGreen
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        MetricCard(label = "LIFESTYLE", value = uiState.activityLevel.uppercase(), unit = "", icon = Icons.Default.DirectionsRun, modifier = Modifier.fillMaxWidth())
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // botão de recalibrar
-        Box(
-            modifier = Modifier
-                .wrapContentWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(DarkSurface)
-                .clickable { onRecalibrate() }
-                .padding(horizontal = 24.dp, vertical = 12.dp)
-                .align(Alignment.CenterHorizontally),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Refresh, contentDescription = "Recalibrate", tint = NeonGreen, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("RECALIBRATE BASELINE", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
+            Spacer(modifier = Modifier.height(48.dp))
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // secção de IMC
-        val bmiColor = getBmiColor(uiState.bmi)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
-                    )
-                )
-                .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-                .padding(16.dp)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("BODY MASS INDEX", color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(bmiColor.copy(alpha = 0.1f))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text(getBmiCategory(uiState.bmi), color = bmiColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(uiState.bmi.toString(), color = bmiColor, fontSize = 48.sp, fontWeight = FontWeight.Bold)
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            BmiBar(uiState.bmi)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Your current BMI indicates ${getBmiCategory(uiState.bmi)} levels for your height and weight metrics.",
-                color = MediumGrey,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
+        item {
+            // secção de IMC
+            val bmiColor = getBmiColor(uiState.bmi)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(DarkSurface)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.Top
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.02f))
+                        )
+                    )
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                    .padding(16.dp)
             ) {
-                Icon(Icons.Default.Info, contentDescription = "Info", tint = ElectricBlue, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("BODY MASS INDEX", color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(bmiColor.copy(alpha = 0.1f))
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text(getBmiCategory(uiState.bmi), color = bmiColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(uiState.bmi.toString(), color = bmiColor, fontSize = 48.sp, fontWeight = FontWeight.Bold)
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                BmiBar(uiState.bmi)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
                 Text(
-                    "Note: BMI is not an absolute health indicator. It does not evaluate body composition, muscle mass, or localized fat.",
+                    text = "Your current BMI indicates ${getBmiCategory(uiState.bmi)} levels for your height and weight metrics.",
                     color = MediumGrey,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(DarkSurface)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = "Info", tint = ElectricBlue, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Note: BMI is not an absolute health indicator. It does not evaluate body composition, muscle mass, or localized fat.",
+                        color = MediumGrey,
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(48.dp))
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        // tendência de peso
-        WeightTrendSection(
-            weightLogs = weightLogs, 
-            targetWeight = user?.targetWeight,
-            onSetTargetWeight = { progressViewModel.setTargetWeight(it) }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // registo de peso
-        LogWeightSection { weight, timestamp ->
-            progressViewModel.addWeightLog(weight, timestamp)
+        item {
+            // tendência de peso
+            WeightTrendSection(
+                weightLogs = weightLogs, 
+                targetWeight = user?.targetWeight,
+                onSetTargetWeight = { progressViewModel.setTargetWeight(it) }
+            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // histórico
-        TechnicalHistoryLedger(weightLogs, user, onDelete = { progressViewModel.deleteWeightLog(it) })
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // diário visual
-        VisualDiarySection(
-            photoLogs = photoLogs,
-            onPhotoClick = { clickedPhoto = it }
-        ) {
-            photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        item {
+            // registo de peso
+            LogWeightSection { weight, timestamp ->
+                progressViewModel.addWeightLog(weight, timestamp)
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
-        Spacer(modifier = Modifier.height(100.dp)) // espaço para navegação inferior
+        item {
+            // histórico
+            TechnicalHistoryLedger(weightLogs, user, onDelete = { progressViewModel.deleteWeightLog(it) })
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+
+        item {
+            // diário visual
+            VisualDiarySection(
+                photoLogs = photoLogs,
+                onPhotoClick = { clickedPhoto = it }
+            ) {
+                photoPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            }
+            Spacer(modifier = Modifier.height(100.dp)) // espaço para navegação inferior
+        }
     }
 
     // diálogo para adicionar foto

@@ -143,7 +143,7 @@ fun AppNavigation(
                         currentRoute = currentRoute,
                         onNavigate = { route ->
                             navController.navigate(route) {
-                                popUpTo(Routes.INSIGHTS) {
+                                popUpTo(navController.graph.startDestinationId) {
                                     saveState = true
                                 }
                                 launchSingleTop = true

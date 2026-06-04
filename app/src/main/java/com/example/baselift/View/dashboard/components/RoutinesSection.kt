@@ -21,19 +21,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyListScope
 import com.example.baselift.Model.local.entity.ExerciseEntity
 import com.example.baselift.Model.local.entity.WorkoutEntity
 import com.example.baselift.View.theme.*
 
-@Composable
-fun RoutinesSection(
+fun LazyListScope.RoutinesSection(
     workouts: List<WorkoutEntity>,
     exercisesMap: Map<Int, List<ExerciseEntity>>,
     workoutVolumeTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
     exerciseVolumeTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap(),
     exerciseMaxWeightTrends: Map<Int, List<com.example.baselift.View.components.ChartDataPoint>> = emptyMap()
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    item {
         Text(
             "Routines",
             color = CrystalWhite,
@@ -41,8 +41,10 @@ fun RoutinesSection(
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(16.dp))
+    }
 
-        if (workouts.isEmpty()) {
+    if (workouts.isEmpty()) {
+        item {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -53,21 +55,22 @@ fun RoutinesSection(
             ) {
                 Text("No routines available.", color = MediumGrey)
             }
-        } else {
-            val routineColors = listOf(NeonGreen, SunYellow, ElectricBlue, VibrantPurple, SoftCoral)
-            workouts.forEachIndexed { index, workout ->
-                val rColor = routineColors[index % routineColors.size]
-                val exercises = exercisesMap[workout.id] ?: emptyList()
-                WorkoutCollapsibleCard(
-                    workout = workout,
-                    exercises = exercises,
-                    workoutVolumeTrend = workoutVolumeTrends[workout.id] ?: emptyList(),
-                    exerciseVolumeTrends = exerciseVolumeTrends,
-                    exerciseMaxWeightTrends = exerciseMaxWeightTrends,
-                    routineColor = rColor
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
+        }
+    } else {
+        val routineColors = listOf(NeonGreen, SunYellow, ElectricBlue, VibrantPurple, SoftCoral)
+        items(workouts.size, key = { index -> workouts[index].id }) { index ->
+            val workout = workouts[index]
+            val rColor = routineColors[index % routineColors.size]
+            val exercises = exercisesMap[workout.id] ?: emptyList()
+            WorkoutCollapsibleCard(
+                workout = workout,
+                exercises = exercises,
+                workoutVolumeTrend = workoutVolumeTrends[workout.id] ?: emptyList(),
+                exerciseVolumeTrends = exerciseVolumeTrends,
+                exerciseMaxWeightTrends = exerciseMaxWeightTrends,
+                routineColor = rColor
+            )
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
