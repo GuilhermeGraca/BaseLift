@@ -107,8 +107,9 @@ fun LogWeightSection(onConfirmEntry: (Float, Long) -> Unit) {
     var isExpanded by remember { mutableStateOf(false) }
     var weightInput by remember { mutableStateOf("") }
     
-    val calendar = Calendar.getInstance()
-    var selectedTimestamp by remember { mutableStateOf(calendar.timeInMillis) }
+    var selectedTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
+    var showCalendarDialog by remember { mutableStateOf(false) }
+
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val context = LocalContext.current
 
@@ -180,23 +181,7 @@ fun LogWeightSection(onConfirmEntry: (Float, Long) -> Unit) {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            val dpd = DatePickerDialog(
-                                context,
-                                { _, year, month, dayOfMonth ->
-                                    val cal = Calendar.getInstance()
-                                    cal.set(year, month, dayOfMonth)
-                                    if (cal.timeInMillis <= System.currentTimeMillis()) {
-                                        selectedTimestamp = cal.timeInMillis
-                                    }
-                                },
-                                calendar.get(Calendar.YEAR),
-                                calendar.get(Calendar.MONTH),
-                                calendar.get(Calendar.DAY_OF_MONTH)
-                            )
-                            dpd.datePicker.maxDate = System.currentTimeMillis()
-                            dpd.show()
-                        },
+                        .clickable { showCalendarDialog = true },
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledBorderColor = PureBlack,
                         disabledContainerColor = PureBlack,
@@ -223,6 +208,32 @@ fun LogWeightSection(onConfirmEntry: (Float, Long) -> Unit) {
                 ) {
                     Text("CONFIRM ENTRY", color = PureBlack, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+    }
+
+    if (showCalendarDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showCalendarDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PureBlack)
+                    .border(1.dp, Color.White.copy(alpha=0.1f), RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+            ) {
+                com.example.baselift.View.components.CustomCalendar(
+                    mode = com.example.baselift.View.components.CalendarMode.SELECT,
+                    selectedDate = selectedTimestamp,
+                    maxDate = System.currentTimeMillis(),
+                    onDateSelected = { timestamp ->
+                        selectedTimestamp = timestamp
+                        showCalendarDialog = false
+                    }
+                )
             }
         }
     }

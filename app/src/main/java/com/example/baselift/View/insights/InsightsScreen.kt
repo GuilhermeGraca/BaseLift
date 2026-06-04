@@ -357,7 +357,7 @@ fun InsightsScreen(
     // diálogo para adicionar foto
     if (selectedUrisForLogging != null) {
         var photoTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
-        val photoCalendar = Calendar.getInstance()
+        var showPhotoCalendarDialog by remember { mutableStateOf(false) }
         val photoDateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
         Dialog(onDismissRequest = { selectedUrisForLogging = null }) {
@@ -404,23 +404,7 @@ fun InsightsScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
-                                    val dpd = DatePickerDialog(
-                                        context,
-                                        { _, year, month, dayOfMonth ->
-                                            val cal = Calendar.getInstance()
-                                            cal.set(year, month, dayOfMonth)
-                                            if (cal.timeInMillis <= System.currentTimeMillis()) {
-                                                photoTimestamp = cal.timeInMillis
-                                            }
-                                        },
-                                        photoCalendar.get(Calendar.YEAR),
-                                        photoCalendar.get(Calendar.MONTH),
-                                        photoCalendar.get(Calendar.DAY_OF_MONTH)
-                                    )
-                                    dpd.datePicker.maxDate = System.currentTimeMillis()
-                                    dpd.show()
-                                },
+                                .clickable { showPhotoCalendarDialog = true },
                             colors = OutlinedTextFieldDefaults.colors(
                                 disabledBorderColor = Color.White.copy(alpha = 0.15f),
                                 disabledContainerColor = PureBlack,
@@ -451,6 +435,32 @@ fun InsightsScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        if (showPhotoCalendarDialog) {
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { showPhotoCalendarDialog = false },
+                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PureBlack)
+                        .border(1.dp, Color.White.copy(alpha=0.1f), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    com.example.baselift.View.components.CustomCalendar(
+                        mode = com.example.baselift.View.components.CalendarMode.SELECT,
+                        selectedDate = photoTimestamp,
+                        maxDate = System.currentTimeMillis(),
+                        onDateSelected = { timestamp ->
+                            photoTimestamp = timestamp
+                            showPhotoCalendarDialog = false
+                        }
+                    )
                 }
             }
         }

@@ -227,6 +227,7 @@ fun AppNavigation(
                     
                     LaunchedEffect(Unit) {
                         dashboardViewModel.setRestDays(sharedPrefs.getInt("workout_rest_days", 4))
+                        dashboardViewModel.setNutritionRestDays(sharedPrefs.getInt("nutrition_rest_days", 0))
                     }
                     
                     val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
@@ -235,6 +236,10 @@ fun AppNavigation(
                         onSetRestDays = { days ->
                             sharedPrefs.edit().putInt("workout_rest_days", days).apply()
                             dashboardViewModel.setRestDays(days)
+                        },
+                        onSetNutritionRestDays = { days ->
+                            sharedPrefs.edit().putInt("nutrition_rest_days", days).apply()
+                            dashboardViewModel.setNutritionRestDays(days)
                         }
                     )
                 }

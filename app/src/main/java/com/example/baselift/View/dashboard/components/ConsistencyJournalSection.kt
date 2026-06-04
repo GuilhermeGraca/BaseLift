@@ -34,7 +34,9 @@ fun ConsistencyJournalSection(
     nutritionDaysThisWeek: Map<Int, com.example.baselift.ViewModel.dashboard.NutritionSummary>,
     workoutDaysThisWeek: Map<Int, List<String>>,
     workoutSessionsThisWeek: Int,
-    onSetRestDays: (Int) -> Unit = {}
+    historicalCalendarData: Map<String, com.example.baselift.View.components.DayMarkerState>,
+    onSetRestDays: (Int) -> Unit = {},
+    onSetNutritionRestDays: (Int) -> Unit = {}
 ) {
     Text(
         "Consistency Journal",
@@ -50,6 +52,12 @@ fun ConsistencyJournalSection(
     var showRestDaysDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var restDaysInput by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(sharedPrefs.getInt("workout_rest_days", 4)) }
 
+    var showNutritionRestDaysDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var nutritionRestDaysInput by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(sharedPrefs.getInt("nutrition_rest_days", 0)) }
+
+    var showCalendarDialog by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var clickedMarker by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.example.baselift.View.components.DayMarkerState?>(null) }
+
     // linha de streaks (fora do cartão principal)
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -60,7 +68,7 @@ fun ConsistencyJournalSection(
             value = nutritionStreak,
             label = "NUTRITION STREAK",
             accentColor = ElectricBlue,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).clickable { showNutritionRestDaysDialog = true }
         )
         StreakCard(
             icon = Icons.Default.FitnessCenter,
@@ -149,6 +157,94 @@ fun ConsistencyJournalSection(
                 }
             }
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        androidx.compose.material3.HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
+        
+        androidx.compose.material3.TextButton(
+            onClick = { showCalendarDialog = true },
+            modifier = Modifier.fillMaxWidth().height(40.dp).padding(top = 4.dp),
+            contentPadding = PaddingValues(0.dp)
+        ) {
+            Text("VIEW CALENDAR", color = MediumGrey, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+
+    if (showCalendarDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showCalendarDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PureBlack)
+                    .border(1.dp, Color.White.copy(alpha=0.1f), RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+            ) {
+                com.example.baselift.View.components.CustomCalendar(
+                    mode = com.example.baselift.View.components.CalendarMode.VIEW,
+                    maxDate = System.currentTimeMillis(),
+                    markedDays = historicalCalendarData,
+                    onDayClickInViewMode = { _, marker ->
+                        if (marker.hasWorkout || marker.hasNutrition) {
+                            clickedMarker = marker
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    if (clickedMarker != null) {
+        val marker = clickedMarker!!
+        androidx.compose.ui.window.Dialog(onDismissRequest = { clickedMarker = null }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF222222))
+                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    .padding(16.dp)
+            ) {
+                if (marker.hasWorkout) {
+                    Text("WORKOUTS", color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    marker.workoutNames.forEach { wName ->
+                        Text("• $wName", color = CrystalWhite, fontSize = 14.sp)
+                    }
+                }
+                
+                if (marker.hasWorkout && marker.hasNutrition) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                if (marker.hasNutrition) {
+                    Text("NUTRITION", color = ElectricBlue, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("${marker.nutritionCalories ?: 0} kcal", color = CrystalWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(com.example.baselift.View.theme.VibrantPurple))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("${marker.nutritionProtein ?: 0}g", color = CrystalWhite, fontSize = 12.sp)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(com.example.baselift.View.theme.SunYellow))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("${marker.nutritionCarbs ?: 0}g", color = CrystalWhite, fontSize = 12.sp)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(ElectricBlue))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("${marker.nutritionFats ?: 0}g", color = CrystalWhite, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if (showRestDaysDialog) {
@@ -201,6 +297,62 @@ fun ConsistencyJournalSection(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = NeonGreen)
+                ) {
+                    Text("SAVE", color = PureBlack, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+    if (showNutritionRestDaysDialog) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showNutritionRestDaysDialog = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PureBlack)
+                    .border(1.dp, ElectricBlue.copy(alpha=0.2f), RoundedCornerShape(12.dp))
+                    .padding(24.dp)
+            ) {
+                Text("NUTRITION STREAK", color = ElectricBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Set the number of Rest Days per week (0 to 7). If you set 2, you need to log nutrition 5 days a week to keep the streak.", color = MediumGrey, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Note: If you set 7 rest days, the streak never resets and just acts as a total nutrition days counter.", color = MediumGrey, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.IconButton(
+                        onClick = { if (nutritionRestDaysInput > 0) nutritionRestDaysInput-- },
+                        modifier = Modifier.background(Color.White.copy(alpha=0.1f), androidx.compose.foundation.shape.CircleShape)
+                    ) {
+                        Text("-", color = CrystalWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(24.dp))
+                    Text("$nutritionRestDaysInput", color = ElectricBlue, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(24.dp))
+                    androidx.compose.material3.IconButton(
+                        onClick = { if (nutritionRestDaysInput < 7) nutritionRestDaysInput++ },
+                        modifier = Modifier.background(Color.White.copy(alpha=0.1f), androidx.compose.foundation.shape.CircleShape)
+                    ) {
+                        Text("+", color = CrystalWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                androidx.compose.material3.Button(
+                    onClick = {
+                        if (nutritionRestDaysInput in 0..7) {
+                            onSetNutritionRestDays(nutritionRestDaysInput)
+                            showNutritionRestDaysDialog = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = ElectricBlue)
                 ) {
                     Text("SAVE", color = PureBlack, fontWeight = FontWeight.Bold)
                 }

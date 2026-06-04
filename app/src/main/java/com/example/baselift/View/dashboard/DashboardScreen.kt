@@ -18,7 +18,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
-    onSetRestDays: (Int) -> Unit = {}
+    onSetRestDays: (Int) -> Unit = {},
+    onSetNutritionRestDays: (Int) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -36,7 +37,9 @@ fun DashboardScreen(
             nutritionDaysThisWeek = uiState.nutritionDaysThisWeek,
             workoutDaysThisWeek = uiState.workoutDaysThisWeek,
             workoutSessionsThisWeek = uiState.workoutSessionsThisWeek,
-            onSetRestDays = onSetRestDays
+            historicalCalendarData = uiState.historicalCalendarData,
+            onSetRestDays = onSetRestDays,
+            onSetNutritionRestDays = onSetNutritionRestDays
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -53,19 +56,6 @@ fun DashboardScreen(
             exerciseMaxWeightTrends = uiState.exerciseMaxWeightTrends
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val coroutineScope = rememberCoroutineScope()
-        androidx.compose.material3.Button(
-            onClick = {
-                coroutineScope.launch {
-                    com.example.baselift.MockDataInjector.injectMockData(context)
-                }
-            },
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = com.example.baselift.View.theme.NeonGreen),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            androidx.compose.material3.Text("Inject Mock Data (Test Only)", color = com.example.baselift.View.theme.PureBlack)
-        }
+
     }
 }
