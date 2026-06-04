@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
@@ -66,9 +67,9 @@ class NutritionViewModel(
             mealTemplates = templates,
             isLoading = false
         )
-    }.stateIn(
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.Lazily,
         initialValue = NutritionUiState()
     )
 

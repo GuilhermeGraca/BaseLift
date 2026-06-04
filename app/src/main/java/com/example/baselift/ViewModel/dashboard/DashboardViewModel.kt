@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.flowOn
 import java.util.Calendar
 import java.util.Locale
 
@@ -101,6 +102,7 @@ class DashboardViewModel(
         
         // agrupar exercícios por workout
         val exercisesMap = allExercises.groupBy { it.workoutId }
+        val exerciseIdToWorkoutId = allExercises.associate { it.id to it.workoutId }
 
         // --- CALCULAR GRÁFICOS POR DATA ---
         val workoutVolTrends = mutableMapOf<Int, MutableList<com.example.baselift.View.components.ChartDataPoint>>()
@@ -109,9 +111,11 @@ class DashboardViewModel(
 
         val setLogsByDate = completedSetLogs.groupBy { timestampToDateKey(it.timestamp) }
         
+        val shortDateFormatter = java.text.SimpleDateFormat("MMM dd", java.util.Locale.US)
+        val cal = java.util.Calendar.getInstance()
+        
         setLogsByDate.forEach { (dateKey, logsForDate) ->
             val parts = dateKey.split("-")
-            val cal = java.util.Calendar.getInstance()
             cal.set(java.util.Calendar.YEAR, parts[0].toInt())
             cal.set(java.util.Calendar.DAY_OF_YEAR, parts[1].toInt())
             cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
@@ -119,10 +123,10 @@ class DashboardViewModel(
             cal.set(java.util.Calendar.SECOND, 0)
             cal.set(java.util.Calendar.MILLISECOND, 0)
             val midnightTs = cal.timeInMillis
-            val dateStr = java.text.SimpleDateFormat("MMM dd", java.util.Locale.US).format(java.util.Date(midnightTs))
+            val dateStr = shortDateFormatter.format(java.util.Date(midnightTs))
 
             // agrupar volume por treino
-            val logsByWorkout = logsForDate.groupBy { log -> allExercises.find { it.id == log.exerciseId }?.workoutId ?: -1 }
+            val logsByWorkout = logsForDate.groupBy { log -> exerciseIdToWorkoutId[log.exerciseId] ?: -1 }
             logsByWorkout.forEach { (wId, wLogs) ->
                 if (wId != -1) {
                     val wVol = wLogs.sumOf { (it.weight * it.reps).toDouble() }.toFloat()
@@ -172,8 +176,9 @@ class DashboardViewModel(
         // --- CALCULAR HISTORICO GLOBAL DE CALENDARIO ---
         val calendarData = mutableMapOf<String, com.example.baselift.View.components.DayMarkerState>()
         
+        val ymdFormatter = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
         fun toYMD(timestamp: Long): String {
-            return java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(timestamp))
+            return ymdFormatter.format(java.util.Date(timestamp))
         }
 
         val nutritionByYMD = nutritionLogs.groupBy { toYMD(it.timestamp) }
@@ -213,9 +218,9 @@ class DashboardViewModel(
             historicalCalendarData = calendarData,
             isLoading = false
         )
-    }.stateIn(
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.Lazily,
         initialValue = DashboardUiState()
     )
 

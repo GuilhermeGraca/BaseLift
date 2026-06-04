@@ -23,13 +23,13 @@ class ProgressViewModel(
 ) : ViewModel() {
 
     val user: StateFlow<UserEntity?> = userRepository.getUser()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     val weightLogs: StateFlow<List<WeightLogEntity>> = progressRepository.allWeightLogs
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val photoLogs: StateFlow<List<PhotoLogEntity>> = progressRepository.allPhotoLogs
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun addWeightLog(weight: Float, timestamp: Long) {
         viewModelScope.launch {
