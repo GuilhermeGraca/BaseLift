@@ -33,7 +33,7 @@ Não são necessárias chaves de API nem configuração adicional — a app é c
 
 - **Onboarding** — registo de dados biométricos, nível de atividade e objetivo; cálculo automático de calorias e macros (Mifflin-St Jeor / TDEE)
 - **Nutrição** — registo rápido de calorias e macros, templates de refeições com toque único, visualização diária com gráfico circular e barras de macros
-- **Treinos** — gestão de rotinas, registo de séries por exercício, deteção automática de Personal Records (peso máximo e 1RM estimado), rest timer, plate calculator
+- **Treinos** — gestão de rotinas, registo de séries por exercício, deteção automática de Personal Records (peso máximo e 1RM estimado), rest timer
 - **Insights** — gráfico de peso com Canvas personalizado, diário visual de fotos com zoom gestual, smart recalibration
 - **Dashboard** — streaks de nutrição e treino por semana, volume total semanal, histórico de PRs por exercício, calendário histórico de atividade
 

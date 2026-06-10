@@ -121,11 +121,12 @@ Na View, os `StateFlow` são observados com `collectAsStateWithLifecycle()`, que
 | Base de Dados | Room Database (SQLite) |
 | Async / Reatividade | Kotlin Coroutines + StateFlow / Flow |
 | Gráfico de Peso | Android Canvas (personalizado) |
-| Outros Gráficos | Biblioteca Vico |
 | Carregamento de Imagens | Coil (`coil-compose:2.5.0`) |
 | Processamento Código Room | KSP (Kotlin Symbol Processing) |
 | `compileSdk` | 35 (Android 15) |
 | `minSdk` | 24 (Android 7.0) |
+
+> *Nota: Inicialmente a app chegou a ter a biblioteca Vico implementada para os gráficos, mas acabou-se por decidir refazer tudo usando o Android Canvas nativo para garantir controlo total sobre os visuais e interações (eixo Y dinâmico, tooltips, etc).*
 
 ---
 
@@ -252,8 +253,6 @@ O ecrã de treinos é unificado — gere rotinas e regista cargas na mesma view.
 - Sessão ativa
 - Lista de exercícios com as séries (`ExerciseUiModel` → `List<SetUiModel>`)
 
-**Tipos de série**: Normal, Warm-up, Drop-set, Failure (com visual diferenciado)
-
 **Lógica de séries**:
 - Cada exercício tem um `setCount` que define o número de séries
 - As séries têm estado sequencial: só se pode completar a próxima se a anterior estiver concluída
@@ -267,9 +266,6 @@ O ecrã de treinos é unificado — gere rotinas e regista cargas na mesma view.
 
 **Rest Timer**: temporizador de descanso integrado com controlos rápidos (+30s, -10s, Skip)
 
-**Plate Calculator**: calculadora de discos integrada no campo de peso — dado um peso alvo e o peso da barra, indica quais discos colocar em cada lado
-
-**Drag-and-drop**: reordenação de exercícios
 
 **Sessões**: quando o utilizador inicia um treino, é criada uma `WorkoutSessionEntity` com `isCompleted = false`. Ao terminar o treino, a sessão fica marcada como completa e os rascunhos são limpos.
 
