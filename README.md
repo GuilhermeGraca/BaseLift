@@ -20,7 +20,7 @@ Aplicação Android de fitness e nutrição, 100% offline. Centraliza o rastreio
 
 ```bash
 # Clonar o repositório
-git clone <url-do-repo>
+git clone <https://github.com/GuilhermeGraca/BaseLift>
 
 # Abrir no Android Studio e correr num emulador ou dispositivo físico (API 24+)
 ```
